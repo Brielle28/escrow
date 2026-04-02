@@ -9,7 +9,7 @@ function App() {
           <span className="logo-mark" aria-hidden />
           <div>
             <div className="topbar__title">Escrow</div>
-            <div className="topbar__sub">Nervos CKB · ckb-js-vm + CCC</div>
+            <div className="topbar__sub">Nervos CKB · Rust escrow + CCC</div>
           </div>
         </div>
         <ConnectWallet />
@@ -23,7 +23,7 @@ function App() {
             This app will orchestrate your escrow lock: deposits, releases,
             refunds, and arbiter paths — wired through{" "}
             <strong>CCC</strong> and your{" "}
-            <strong>TypeScript lock script</strong>.
+            <strong>RISC-V escrow script</strong>.
           </p>
           <div className="hero__actions">
             <a
@@ -36,11 +36,11 @@ function App() {
             </a>
             <a
               className="btn-ghost"
-              href="https://docs.nervos.org/docs/script/js/js-vm"
+              href="https://docs.nervos.org/docs/script/"
               target="_blank"
               rel="noreferrer"
             >
-              CKB JS VM
+              CKB scripts
             </a>
           </div>
         </section>

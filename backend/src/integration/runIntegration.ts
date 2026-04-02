@@ -1,13 +1,15 @@
 /**
  * Phase D — CCC integration against local OffCKB devnet.
  *
- * Prereqs: `build:contracts`, deploy, `deployment/scripts.json`, system-scripts JSON for your chain.
+ * Prereqs: `pnpm run build:contracts` (RISC-V binary), deploy, `deployment/scripts.json` key `escrow`, system-scripts JSON.
  * Devnet: `offckb node`, `pnpm prep:devnet`. Testnet: `pnpm prep:testnet`, `CKB_RPC_URL` = public testnet RPC.
  *
  * `backend/.env.local`: CKB_RPC_URL, DEPLOYER_PRIVATE_KEY.
  * CKB_NETWORK=devnet|testnet (default devnet). OffCKB devnet needs secp patch; public testnet uses CCC defaults.
  *
  * Optional: INTEGRATION_SPEND_MODE=release|dispute|timeout, INTEGRATION_PARTY_SEED, INTEGRATION_MIN_SINCE, INTEGRATION_ESCROW_CAPACITY
+ *
+ * **On-chain:** Rust (`contracts/escrow-rust`). **This runner:** TypeScript + CCC — builds txs only; does not execute contract code.
  */
 import { createHash, createHmac } from "node:crypto";
 import {
@@ -22,7 +24,6 @@ import {
   WitnessArgs,
   bytesFrom,
   hashCkb,
-  hashTypeToBytes,
   hexFrom,
   type CellDepInfoLike,
   type Client,
@@ -31,7 +32,7 @@ import {
 import * as secp from "@noble/secp256k1";
 import { loadEnv } from "./loadEnv.js";
 import {
-  bytecodeEntryForChain,
+  escrowEntryForChain,
   readScriptsJson,
   readSystemScriptsChain,
   type ChainNetwork,
@@ -80,28 +81,14 @@ async function lockSecp(client: Client, pub33: Uint8Array): Promise<Script> {
   );
 }
 
-function buildVmEscrowArgs(
-  bytecodeInfo: ScriptInfo,
-  escrowPayloadHex: Hex,
-): Hex {
-  return hexFrom(
-    "0x0000" +
-      bytecodeInfo.codeHash.slice(2) +
-      hexFrom(hashTypeToBytes(bytecodeInfo.hashType)).slice(2) +
-      escrowPayloadHex.slice(2),
-  );
-}
-
 async function attachEscrowDeps(
   tx: Transaction,
   client: Client,
-  bytecodeInfo: ScriptInfo,
-  vmInfo: ScriptInfo,
   alwaysInfo: ScriptInfo,
+  escrowScriptInfo: ScriptInfo,
 ): Promise<void> {
   await tx.addCellDepInfos(client, ...alwaysInfo.cellDeps);
-  await tx.addCellDepInfos(client, ...vmInfo.cellDeps);
-  await tx.addCellDepInfos(client, ...bytecodeInfo.cellDeps);
+  await tx.addCellDepInfos(client, ...escrowScriptInfo.cellDeps);
 }
 
 function witnessLock(
@@ -120,16 +107,6 @@ function witnessLock(
     o += p.length;
   }
   return hexFrom(out);
-}
-
-function vmInfoFromChain(network: ChainNetwork): ScriptInfo {
-  const s = readSystemScriptsChain(network);
-  const raw = s.ckb_js_vm.script as {
-    codeHash: string;
-    hashType: string;
-    cellDeps: CellDepInfoLike[];
-  };
-  return ScriptInfo.from(raw);
 }
 
 function alwaysInfoFromChain(network: ChainNetwork): ScriptInfo {
@@ -263,14 +240,6 @@ async function main(): Promise<void> {
   }
 
   const scriptsJson = readScriptsJson();
-  const bytecodeEntry = bytecodeEntryForChain(scriptsJson, chainNet);
-  if (!bytecodeEntry) {
-    throw new Error(
-      `deployment/scripts.json missing ${chainNet}["index.bc"] — run pnpm prep:${chainNet === "testnet" ? "testnet" : "devnet"}`,
-    );
-  }
-  const bytecodeInfo = scriptInfoFromDeployEntry(bytecodeEntry);
-  const vmInfo = vmInfoFromChain(chainNet);
   /** Public testnet CCC export often omits `always_success` under `testnet` — use known script. OffCKB devnet still uses JSON. */
   const alwaysInfo =
     chainNet === "testnet"
@@ -296,11 +265,17 @@ async function main(): Promise<void> {
     minSince,
   });
 
-  const escrowTypeArgs = buildVmEscrowArgs(bytecodeInfo, escrowPayload);
+  const escrowDeployEntry = escrowEntryForChain(scriptsJson, chainNet);
+  if (!escrowDeployEntry) {
+    throw new Error(
+      `deployment/scripts.json missing ${chainNet}["escrow"] — run pnpm prep:${chainNet === "testnet" ? "testnet" : "devnet"} after building/deploying contracts/escrow-rust`,
+    );
+  }
+  const escrowScriptInfo = scriptInfoFromDeployEntry(escrowDeployEntry);
   const escrowTypeScript = Script.from({
-    codeHash: vmInfo.codeHash,
-    hashType: vmInfo.hashType,
-    args: escrowTypeArgs,
+    codeHash: escrowScriptInfo.codeHash,
+    hashType: escrowScriptInfo.hashType,
+    args: escrowPayload,
   });
 
   const alwaysSuccessLock = Script.from({
@@ -325,7 +300,7 @@ async function main(): Promise<void> {
     outputsData: [],
   });
 
-  await attachEscrowDeps(fundTx, client, bytecodeInfo, vmInfo, alwaysInfo);
+  await attachEscrowDeps(fundTx, client, alwaysInfo, escrowScriptInfo);
 
   fundTx.addOutput(
     {
@@ -382,7 +357,7 @@ async function main(): Promise<void> {
       outputsData: [],
     });
 
-    await attachEscrowDeps(tx, client, bytecodeInfo, vmInfo, alwaysInfo);
+    await attachEscrowDeps(tx, client, alwaysInfo, escrowScriptInfo);
 
     tx.addInput(
       CellInput.from({

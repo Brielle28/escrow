@@ -1,0 +1,33 @@
+[package]
+name = "escrow-rust"
+version = "0.1.0"
+edition = "2021"
+description = "Escrow type script (CKB-VM RISC-V) — protocol v1"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "escrow-rust"
+path = "src/main.rs"
+test = false
+bench = false
+
+[dependencies]
+# Disable default `libc` (needs RISC-V GCC/Clang for C stubs); syscall path works without it.
+ckb-std = { version = "0.16.4", default-features = false, features = [
+    "allocator",
+    "calc-hash",
+    "ckb-types",
+    "dummy-atomic",
+] }
+ckb-hash = { version = "0.119", default-features = false, features = ["ckb-contract"] }
+molecule = { version = "0.8", default-features = false }
+k256 = { version = "0.13", default-features = false, features = ["ecdsa", "arithmetic"] }
+signature = { version = "2.2", default-features = false }
+
+[profile.release]
+overflow-checks = true
+strip = false
+opt-level = "s"
+lto = true

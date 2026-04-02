@@ -1,0 +1,12 @@
+{
+  "cell_recipes": [
+    {
+      "name": "escrow-rust",
+      "tx_hash": "0xb39f530bf452b4e897a12313699a0b051c81e175351a8f67edf61cd653900849",
+      "index": 0,
+      "occupied_capacity": 15748800000000,
+      "data_hash": "0x6a52643df87e360ffe4ea084b8054f07d3fd4f729a4728a40ad11abdb340a814"
+    }
+  ],
+  "dep_group_recipes": []
+}

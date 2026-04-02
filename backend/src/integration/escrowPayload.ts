@@ -6,7 +6,7 @@ import {
   type Hex,
 } from "@ckb-ccc/core";
 
-/** Payload v1 — matches `contracts/on-chain-script/src/index.ts`. */
+/** Payload v1 — matches `contracts/escrow-rust` on-chain logic. */
 export function buildEscrowPayloadV1(args: {
   depositorPkHash: string;
   recipientPkHash: string;

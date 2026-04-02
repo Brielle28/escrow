@@ -25,17 +25,13 @@ An escrow is a system where a neutral middleman holds funds between two parties 
 
 | Layer | Tool | Purpose |
 |-------|------|---------|
-| On-chain logic | **TypeScript** | Escrow **lock script** compiled for **`ckb-js-vm`** (QuickJS on CKB-VM) |
-| On-chain runtime | **`ckb-js-vm`** | Executes your script bytecode on-chain ([mechanism & capabilities](https://docs.nervos.org/docs/script/js/js-vm)) |
-| Standard library | **`@ckb-js-std/*`** | Syscalls and helpers inside the VM (same family as the official [Simple Lock](https://docs.nervos.org/docs/dapp/simple-lock) tutorial) |
+| On-chain logic | **Rust** (`contracts/escrow-rust`) | Escrow **type script** compiled to **CKB-VM RISC-V** (`riscv64imac-unknown-none-elf`) via **`ckb-std`** |
+| Off-chain integration | **TypeScript + `@ckb-ccc/ccc`** | Builds transactions, loads deployment metadata, signs — **does not execute** on-chain Rust (CKB nodes run the binary) |
 | Local chain | **OffCKB** (`@offckb/cli`) | Local **Devnet**, accounts, deploy, deposit ([OffCKB](https://github.com/ckb-devrel/offckb)) |
-| App / integration tests | **TypeScript + CCC** | Build transactions, query cells, send txs — **no frontend required** for backend validation |
 | Staging | **CKB Pudge Testnet** | Public testnet before any mainnet plan |
-| Frontend | **React + CCC** | **`frontend/`** — Vite + **`@ckb-ccc/connector-react`** (wallet shell); escrow flows come after script + backend are stable |
+| Frontend | **React + CCC** | **`frontend/`** — Vite + **`@ckb-ccc/connector-react`** (wallet shell); escrow flows TBD |
 
-**You do not use Rust or Capsule for the primary on-chain contract path.** The contract lives as **QuickJS bytecode** (or bundled JS) loaded via **`ckb-js-vm`**; your repo is a **`ckb-js-vm`** style TypeScript project, not a Capsule Rust crate.
-
-**Network note:** Before assuming **mainnet**, check current **`ckb-js-vm`** deployment status in [Ecosystem scripts](https://docs.nervos.org/docs/ecosystem-scripts/introduction). Official docs recommend **Devnet / Testnet** for JS VM work until you confirm availability on your target network.
+Deployment metadata lives in **`deployment/scripts.json`** under the **`escrow`** key per network (`codeHash`, `hashType`, `cellDeps` for the deployed RISC-V binary).
 
 ---
 
@@ -43,7 +39,7 @@ An escrow is a system where a neutral middleman holds funds between two parties 
 
 ```
 Phase 1: Setup & Environment        ← We start here
-Phase 2: Write the Escrow Lock Script (TypeScript → ckb-js-vm)
+Phase 2: Escrow type script (Rust → CKB-VM RISC-V)
 Phase 3: Deploy & Test Locally (OffCKB + CCC test scripts)
 Phase 4: Move to Testnet
 Phase 5: Frontend (shell started; flows after Week 3–4)
@@ -200,9 +196,8 @@ Single **pnpm workspace** at the repository root (`pnpm-workspace.yaml` lists `c
 
 ```
 escrow/                              ← repository root (name on disk may be escrow or escrow-ckb)
-├── contracts/                       ← On-chain (ckb-js-vm)
-│   ├── on-chain-script/             ← TypeScript lock script → dist/index.bc (dist/ is gitignored)
-│   └── on-chain-script-tests/       ← Jest + ckb-testtool (ckb-debugger on PATH)
+├── contracts/                       ← On-chain (Rust RISC-V)
+│   └── escrow-rust/                 ← Escrow type script → target/…/release/escrow-rust
 │
 ├── backend/                         ← Headless TypeScript + @ckb-ccc/ccc (package: escrow-backend)
 │   ├── src/
@@ -232,12 +227,12 @@ These are the commands you will use most often after cloning:
 |---------|----------------|
 | **`pnpm install`** | Installs dependencies for **contracts**, **backend**, and **frontend** (respects `pnpm-lock.yaml`). |
 | **`pnpm run setup:tools`** | **Windows helper**: downloads and extracts **`ckb-debugger.exe`** into **`tools/`** (run once per machine, or whenever you need to refresh tooling). |
-| **`pnpm run build:contracts`** | Builds the on-chain script: bundle → **`dist/index.js`** → **`dist/index.bc`**. Requires **`ckb-debugger`** (use `setup:tools` on Windows, or ensure debugger is on `PATH`). |
-| **`pnpm run test`** | Runs **Jest** + **ckb-testtool** tests under **`contracts/on-chain-script-tests/`** (same **`ckb-debugger`** requirement). |
+| **`pnpm run build:contracts`** | **`cargo build`** for **`contracts/escrow-rust`** (RISC-V target). Requires **Rust** + **`riscv64imac-unknown-none-elf`**. |
+| **`pnpm run test`** | **`cargo test`** for **`contracts/escrow-rust`**. |
 | **`pnpm run dev`** | Starts the **Vite** dev server for **`frontend/`** (default **http://localhost:5173**). |
 | **`pnpm devnet:node`** | Starts **OffCKB** local devnet (`offckb node`). Keep this terminal open while developing; integration tests expect RPC to be up. |
-| **`pnpm run deploy:devnet`** | Deploys **`contracts/on-chain-script/dist/index.bc`** and writes **`deployment/scripts.json`** (requires devnet running; uses **`offckb deploy -y`**). Run after **`build:contracts`** if bytecode changed. |
-| **`pnpm run system-scripts:devnet`** | Exports CCC-style system scripts to **`deployment/system-scripts.devnet.json`** (`offckb system-scripts`). Refresh after devnet/tooling changes so **`ckb-js-vm`** deps match your chain. |
+| **`pnpm run deploy:devnet`** | Deploys the **RISC-V** **`escrow-rust`** binary and updates **`deployment/`** (requires devnet running; **`offckb deploy -y`**). Merge **`escrow`** into **`deployment/scripts.json`** if needed. |
+| **`pnpm run system-scripts:devnet`** | Exports CCC-style system scripts to **`deployment/system-scripts.devnet.json`** (`offckb system-scripts`). Refresh after chain resets. |
 | **`pnpm run prep:devnet`** | One-shot: **`build:contracts`** → **`deploy:devnet`** → **`system-scripts:devnet`**. Use before **`test:integration`** when you changed the contract or reset the chain. |
 | **`pnpm run deploy:testnet`** | Deploys bytecode to **CKB public testnet** — pass **`--privkey`** yourself, or prefer **`pnpm run deploy:testnet:env`**. Updates **`deployment/scripts.json`** `testnet` section. |
 | **`pnpm run deploy:testnet:env`** | Same as **`deploy:testnet`** but **`--privkey`** is read from **`backend/.env.local`** **`DEPLOYER_PRIVATE_KEY`** (nothing secret pasted in the terminal). Requires funded testnet balance on that key. |
@@ -299,7 +294,7 @@ With the root **`.gitignore`**, **`git add .`** from the repo root should **not*
 | Phase | Status |
 |-------|--------|
 | Week 1 — Setup & Environment | Done (tooling + OffCKB pattern in repo) |
-| Week 2 — Escrow lock (TypeScript / ckb-js-vm) | Done (script + VM tests; iterate as needed) |
+| Week 2 — Escrow type script (Rust / CKB-VM) | Done (`contracts/escrow-rust`; `pnpm run test`) |
 | Week 3 — Deploy & integration tests (CCC) | Done for **local OffCKB devnet** (`pnpm test:integration`; deploy/prep scripts in root **`package.json`**) |
 | Week 4 — Testnet & full testing | Not started — see **`plan/week-4-testnet-spec.md`** |
 | Week 5 — Frontend | Shell (wallet + layout); flows pending |
@@ -314,8 +309,6 @@ Start **Week 4** using the specification **`plan/week-4-testnet-spec.md`** (test
 
 ## Reference Links
 
-- [CKB JS VM: Mechanism and Capabilities](https://docs.nervos.org/docs/script/js/js-vm)
-- [JavaScript / TypeScript Quick Start](https://docs.nervos.org/docs/script/js/js-quick-start)
-- [Build a Simple Lock (full-stack example; on-chain TS + CCC)](https://docs.nervos.org/docs/dapp/simple-lock)
-- [Ecosystem scripts (deployment status)](https://docs.nervos.org/docs/ecosystem-scripts/introduction)
 - [CCC overview](https://docs.ckbccc.com/docs/ccc/)
+- [CKB script/RISC-V ecosystem](https://docs.nervos.org/docs/script/)
+- [Ecosystem scripts (deployment status)](https://docs.nervos.org/docs/ecosystem-scripts/introduction)

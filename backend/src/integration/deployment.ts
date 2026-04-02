@@ -82,9 +82,15 @@ export function readSystemScriptsChain(network: ChainNetwork): SystemScriptBundl
   return section;
 }
 
-export function bytecodeEntryForChain(
+/**
+ * Deployed RISC-V escrow binary.
+ * OffCKB writes **`escrow-rust`**; older docs used **`escrow`** — we accept either.
+ */
+export function escrowEntryForChain(
   scripts: ScriptsJson,
   network: ChainNetwork,
 ): ScriptDeployEntry | undefined {
-  return scripts[network]?.["index.bc"];
+  const m = scripts[network];
+  if (!m) return undefined;
+  return m.escrow ?? m["escrow-rust"];
 }

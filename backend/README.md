@@ -6,7 +6,7 @@ Default client and flows will align with your escrow deployment (`scripts.json`,
 
 **Local OffCKB:** Copy `.env.example` → `.env.local`. Set `CKB_RPC_URL` to what `offckb node` prints (proxy often `http://127.0.0.1:28114`). From `offckb accounts`, pick an index and set `DEPLOYER_ADDRESS` / `DEPLOYER_PRIVATE_KEY` (devnet genesis keys — never mainnet). See `plan/offckb-local-setup.md`.
 
-**Phase D integration (CCC):** With `offckb node` running, `pnpm run build:contracts`, deploy artifacts in `deployment/scripts.json`, and:
+**Phase D integration (CCC):** With `offckb node` running, `pnpm run build:contracts` (Rust escrow binary), ensure **`deployment/scripts.json`** has an **`escrow`** entry for your network, and:
 
 ```bash
 offckb system-scripts --export-style ccc -o deployment/system-scripts.devnet.json

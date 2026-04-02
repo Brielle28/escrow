@@ -27,7 +27,15 @@ if (!pk || !pk.startsWith("0x") || pk.length !== 66) {
   process.exit(1);
 }
 
-const target = path.join(root, "contracts", "on-chain-script", "dist", "index.bc");
+const target = path.join(
+  root,
+  "contracts",
+  "escrow-rust",
+  "target",
+  "riscv64imac-unknown-none-elf",
+  "release",
+  "escrow-rust",
+);
 const outDir = path.join(root, "deployment");
 
 const r = spawnSync(

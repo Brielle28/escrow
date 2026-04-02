@@ -3,6 +3,9 @@ node_modules
 node_modules/
 plan/
 report/
+# Rust (escrow RISC-V contract)
+contracts/escrow-rust/target/
+
 # Build outputs (any package: on-chain dist/, Vite frontend/dist/, etc.)
 dist
 dist-ssr

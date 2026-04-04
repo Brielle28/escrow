@@ -1,0 +1,17 @@
+{
+  "name": "escrow-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless TypeScript + CCC: integration tests, deploy helpers, RPC (no UI).",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ckb-ccc/ccc": "^1.1.25"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.2"
+  }
+}

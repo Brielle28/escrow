@@ -1,0 +1,34 @@
+# Dependencies
+node_modules
+
+# Build outputs (any package: on-chain dist/, Vite frontend/dist/, etc.)
+dist
+dist-ssr
+
+# TypeScript / tooling caches
+*.tsbuildinfo
+.cache
+.turbo
+coverage
+
+# Local env & secrets (never commit real keys)
+.env
+.env.*.local
+.env.local
+
+# Logs & debug
+*.log
+pnpm-debug.log*
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Optional: uncomment if you generate deploy artifacts locally and do not want them tracked
+# /deployment/

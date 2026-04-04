@@ -1,0 +1,21 @@
+{
+  "name": "escrow",
+  "private": true,
+  "scripts": {
+    "build": "pnpm -r run build",
+    "build:contracts": "pnpm --filter js-vm run build",
+    "test": "pnpm --filter js-vm-tests run test",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "dev": "pnpm --filter escrow-web dev",
+    "lint": "pnpm -r run lint --if-present"
+  },
+  "devDependencies": {
+    "prettier": "~3.5.3",
+    "prettier-plugin-organize-imports": "~4.1.0",
+    "rimraf": "~6.0.1",
+    "typescript": "~5.8.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}

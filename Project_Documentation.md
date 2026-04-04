@@ -31,7 +31,7 @@ An escrow is a system where a neutral middleman holds funds between two parties 
 | Local chain | **OffCKB** (`@offckb/cli`) | Local **Devnet**, accounts, deploy, deposit ([OffCKB](https://github.com/ckb-devrel/offckb)) |
 | App / integration tests | **TypeScript + CCC** | Build transactions, query cells, send txs — **no frontend required** for backend validation |
 | Staging | **CKB Pudge Testnet** | Public testnet before any mainnet plan |
-| Frontend | **React + CCC** | Pending — after on-chain script and backend tests are solid |
+| Frontend | **React + CCC** | **`frontend/`** — Vite + **`@ckb-ccc/connector-react`** (wallet shell); escrow flows come after script + backend are stable |
 
 **You do not use Rust or Capsule for the primary on-chain contract path.** The contract lives as **QuickJS bytecode** (or bundled JS) loaded via **`ckb-js-vm`**; your repo is a **`ckb-js-vm`** style TypeScript project, not a Capsule Rust crate.
 
@@ -46,7 +46,7 @@ Phase 1: Setup & Environment        ← We start here
 Phase 2: Write the Escrow Lock Script (TypeScript → ckb-js-vm)
 Phase 3: Deploy & Test Locally (OffCKB + CCC test scripts)
 Phase 4: Move to Testnet
-Phase 5: Frontend (Pending)
+Phase 5: Frontend (shell started; flows after Week 3–4)
 ```
 
 ---
@@ -72,7 +72,7 @@ Phase 5: Frontend (Pending)
 2. Install **OffCKB** globally: `@offckb/cli` (see [OffCKB](https://github.com/ckb-devrel/offckb))
 3. Start local Devnet: `offckb node` — confirm blocks / tip advances
 4. Scaffold a **`ckb-js-vm`** TypeScript contract project, for example: `pnpm create ckb-js-vm-app` (see [JS Quick Start](https://docs.nervos.org/docs/script/js/js-quick-start))
-5. Run `pnpm install` and `pnpm build` in the project root; fix any environment issues until build succeeds
+5. From the **repository root**, run `pnpm install` then `pnpm run build:contracts` (see **Day-to-day commands** below); fix any environment issues until the on-chain package builds
 6. Install **CCC** in the folder where integration tests will live (or add a workspace package for tests)
 7. Initialize **git** and a clear **folder layout** (see below)
 
@@ -128,7 +128,7 @@ Phase 5: Frontend (Pending)
 
 **How to achieve it:**
 
-1. `pnpm build` (or your repo’s build) to produce deployment artifacts
+1. `pnpm run build:contracts` (from repo root) to produce deployment artifacts (`contracts/on-chain-script/dist/`)
 2. Deploy to Devnet, e.g. `pnpm run deploy --network devnet` (or OffCKB deploy flow you adopt — align with [Simple Lock](https://docs.nervos.org/docs/dapp/simple-lock) **Deploy** section)
 3. Save **`scripts.json`** / deployment metadata your **CCC** code will read for **code hashes**, **hash types**, and **cell deps**
 4. Write **integration** TypeScript modules (CCC) that:
@@ -179,59 +179,72 @@ Test 4 → Dispute path: arbiter + depositor refund (or your defined dispute out
 
 ---
 
-## Week 5 & Beyond — Frontend (Pending)
+## Week 5 & Beyond — Frontend
 
 **Goal:** Build the React frontend that uses **CCC** to drive the same flows you already tested in TypeScript.
 
-This phase starts only after Week 4 is complete for your chosen network.
+**Current repo state:** `frontend/` is a **Vite + React** app (`escrow-web`) with **`@ckb-ccc/connector-react`** (`CccProvider`, connect wallet, testnet/mainnet client switcher). Escrow actions (lock, release, refund) are **not** implemented yet—add them after the on-chain script and backend flows are stable.
 
-**Planned UI:**
+**Planned UI (remaining):**
 
-- Wallet connection (CCC connector)
 - Depositor flow: lock funds
-- Recipient / arbiter flows: correct witness construction for release or dispute paths
+- Recipient / arbiter flows: witness construction for release or dispute paths
 - Timeout refund flow for depositor
 - Transaction status / links to explorer
 
-Full frontend documentation can be added when you start this phase.
-
 ---
 
-# Project Folder Structure (TypeScript + ckb-js-vm)
+# Project folder structure (repo layout)
 
-Use a **monorepo** similar to official examples (adjust names to taste):
+Single **pnpm workspace** at the repository root (`pnpm-workspace.yaml` lists `contracts/*`, `backend`, `frontend`). Three concerns stay in separate top-level folders:
 
 ```
-escrow-ckb/
+escrow/                              ← repository root (name on disk may be escrow or escrow-ckb)
+├── contracts/                       ← On-chain (ckb-js-vm)
+│   ├── on-chain-script/             ← TypeScript lock script → dist/index.bc (dist/ is gitignored)
+│   └── on-chain-script-tests/       ← Jest + ckb-testtool (ckb-debugger on PATH)
 │
-├── packages/
-│   ├── escrow-lock/              ← TypeScript on-chain escrow lock (ckb-js-vm)
-│   │   ├── src/
-│   │   │   └── main.ts           ← entry; compiles to .bc / deploy bundle
-│   │   └── package.json
-│   │
-│   └── escrow-lock-tests/        ← Unit tests (ckb-testtool)
-│       └── ...
+├── backend/                         ← Headless TypeScript + @ckb-ccc/ccc (package: escrow-backend)
+│   ├── src/
+│   └── package.json
 │
-├── integration-tests/            ← TypeScript + CCC (local + testnet)
-│   ├── lock-funds.ts
-│   ├── release.ts
-│   ├── timeout-refund.ts
-│   └── dispute-refund.ts
+├── frontend/                        ← Vite + React, package name escrow-web + @ckb-ccc/connector-react
+│   ├── src/
+│   └── package.json
 │
-├── scripts/
-│   └── deploy.ts                 ← Optional wrapper around deploy CLI
-│
-├── deployment/                   ← Generated: scripts.json, cell deps (gitignore or commit per team policy)
-│
-├── frontend/                     ← React + CCC (PENDING)
-│
-├── package.json                  ← pnpm workspace root
+├── package.json                     ← Root workspace scripts (install, build:contracts, test, dev, …)
 ├── pnpm-workspace.yaml
+├── pnpm-lock.yaml                   ← commit this for reproducible installs
+├── .gitignore
+├── Project_Documentation.md
 └── README.md
 ```
 
-If you used **`pnpm create ckb-js-vm-app`**, you may keep that tool’s default package names (`on-chain-script`, `on-chain-script-tests`) and treat the above as a **logical** map.
+**`deployment/`** and **`scripts/deploy.ts`** can be added when you wire OffCKB deploy outputs; keep generated **`scripts.json`** out of git or commit it—team choice (see `.gitignore` optional `deployment/` comment).
+
+---
+
+## Day-to-day commands (run from repository root)
+
+These are the four commands you will use most often after cloning:
+
+| Command | What it does |
+|---------|----------------|
+| **`pnpm install`** | Installs dependencies for **contracts**, **backend**, and **frontend** (respects `pnpm-lock.yaml`). |
+| **`pnpm run build:contracts`** | Builds the on-chain script: bundle → **`dist/index.js`** → **`dist/index.bc`**. Requires **`ckb-debugger`** on your **`PATH`**. On Windows, if PowerShell cannot find it, use **Git Bash** (same terminal where `ckb-debugger --version` works). |
+| **`pnpm run test`** | Runs **Jest** + **ckb-testtool** tests under **`contracts/on-chain-script-tests/`** (same **`ckb-debugger`** requirement). |
+| **`pnpm run dev`** | Starts the **Vite** dev server for **`frontend/`** (default **http://localhost:5173**). |
+
+**Also useful**
+
+- **`pnpm run build`** — builds every workspace package that defines a **`build`** script (contracts + backend typecheck + frontend production build).
+- **`pnpm --filter escrow-backend run typecheck`** — TypeScript check for **`backend/`** only.
+
+---
+
+## Git: what is safe to commit
+
+With the root **`.gitignore`**, **`git add .`** from the repo root should **not** stage **`node_modules`**, **`dist/`**, **`.env*`**, caches, or log files. **`pnpm-lock.yaml`** is **not** ignored—**commit it** so installs are reproducible. If you add a **`deployment/`** folder later, decide as a team whether to track it; there is an optional ignore rule commented in **`.gitignore`**.
 
 ---
 
@@ -243,7 +256,7 @@ If you used **`pnpm create ckb-js-vm-app`**, you may keep that tool’s default 
 | Week 2 — Escrow lock (TypeScript / ckb-js-vm) | Not started |
 | Week 3 — Deploy & integration tests (CCC) | Not started |
 | Week 4 — Testnet & full testing | Not started |
-| Week 5 — Frontend | Pending |
+| Week 5 — Frontend | Shell (wallet + layout); flows pending |
 
 ---
 

@@ -226,14 +226,24 @@ escrow/                              ← repository root (name on disk may be es
 
 ## Day-to-day commands (run from repository root)
 
-These are the four commands you will use most often after cloning:
+These are the commands you will use most often after cloning:
 
 | Command | What it does |
 |---------|----------------|
 | **`pnpm install`** | Installs dependencies for **contracts**, **backend**, and **frontend** (respects `pnpm-lock.yaml`). |
-| **`pnpm run build:contracts`** | Builds the on-chain script: bundle → **`dist/index.js`** → **`dist/index.bc`**. Requires **`ckb-debugger`** on your **`PATH`**. On Windows, if PowerShell cannot find it, use **Git Bash** (same terminal where `ckb-debugger --version` works). |
+| **`pnpm run setup:tools`** | **Windows helper**: downloads and extracts **`ckb-debugger.exe`** into **`tools/`** (run once per machine, or whenever you need to refresh tooling). |
+| **`pnpm run build:contracts`** | Builds the on-chain script: bundle → **`dist/index.js`** → **`dist/index.bc`**. Requires **`ckb-debugger`** (use `setup:tools` on Windows, or ensure debugger is on `PATH`). |
 | **`pnpm run test`** | Runs **Jest** + **ckb-testtool** tests under **`contracts/on-chain-script-tests/`** (same **`ckb-debugger`** requirement). |
 | **`pnpm run dev`** | Starts the **Vite** dev server for **`frontend/`** (default **http://localhost:5173**). |
+
+**Windows quick start for tooling**
+
+```bash
+pnpm install
+pnpm run setup:tools
+pnpm run build:contracts
+pnpm run test
+```
 
 **Also useful**
 

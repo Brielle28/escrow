@@ -54,7 +54,7 @@ function slice(b: ArrayBuffer, start: number, len: number): ArrayBuffer {
   return b.slice(start, start + len);
 }
 
-/** Same as CKB `tx.hash()`: blake2b of serialized raw transaction (no witnesses). */
+/** creates a message to sign for the escrow contract Same as CKB `tx.hash()`: blake2b of serialized raw transaction (no witnesses). */
 function escrowSigningMessage(tx: Transaction): ArrayBuffer {
   const raw = RawTransaction.encode({
     version: tx.version,
@@ -67,12 +67,14 @@ function escrowSigningMessage(tx: Transaction): ArrayBuffer {
   return hashCkb(raw);
 }
 
+// checking whether the recipient wallet (lock script) is the one we agreed on in advance
 function lockScriptHashFromOutput0(): ArrayBuffer {
   /** Escrow runs as the cell’s type script (ckb-js-vm); use group output, not flat OUTPUT. */
   const out = HighLevel.loadCell(0, bindings.SOURCE_GROUP_OUTPUT);
   return hashCkb(out.lock.toBytes());
 }
 
+// comparing if the two byte strings are identical?
 function bytesEq(a: ArrayBuffer, b: ArrayBuffer): boolean {
   if (a.byteLength !== b.byteLength) return false;
   const ua = new Uint8Array(a);
@@ -83,6 +85,7 @@ function bytesEq(a: ArrayBuffer, b: ArrayBuffer): boolean {
   return true;
 }
 
+// verifying the signature and the public key match what we expected hash are correct
 function verifySigAndPubkeyHash(
   sig64: ArrayBuffer,
   msg32: ArrayBuffer,

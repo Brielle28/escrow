@@ -27,24 +27,19 @@
     - If everything goes well, money goes to the **seller**.
     - If there is a dispute or timeout, money goes back to the **buyer**.
   - In short: seller gets paid on success, buyer gets refunded on failed or expired deals.
-
 - **How approvals work**
   - People must “approve” with digital signatures before money can move.
   - For two-person approval paths, both sign the same transaction data so the script can verify they both agreed.
-
 - **How timeout works**
   - Timeout uses the transaction’s `since` value.
   - If the transaction is not old enough, refund-by-timeout is rejected.
   - If the time condition is met, the timeout refund path can proceed.
-
 - **What we learned from testing setup**
   - In our current test setup, escrow logic runs inside the JS VM as a script in the transaction.
   - We must use the correct built-in CKB constants when reading transaction data; hardcoded numbers cause failures.
-
 - **Windows setup lesson**
   - Tests/build need `ckb-debugger` available in PATH.
   - Keeping a local copy in `tools/` and calling it from scripts makes setup more reliable.
-
 
 ### Practical Progress
 
@@ -63,16 +58,18 @@
   - Dispute path: depositor + arbiter signatures; output 0 locked to **depositor** script.
   - Timeout path: depositor signature; `since >= min_since`; output 0 locked to **depositor** script.
 - **Test runner + debugger PATH** — `contracts/on-chain-script-tests/run-jest.cjs` prepends repo `tools/` to `PATH`; `contracts/on-chain-script-tests/package.json` test script runs it; `jest.config.cjs` uses standard `ts-jest` + Node.
-- **Signing in tests** — `@noble/secp256k1` with `hmacSha256Sync` wired via Node `crypto` for `signSync`; **`{ der: false }`** for compact signatures.
+- **Signing in tests** — `@noble/secp256k1` with `hmacSha256Sync` wired via Node `crypto` for `signSync`; `**{ der: false }`** for compact signatures.
 - **Automated verification** — `pnpm run test` passes (3 tests).
 
 ---
 
 ### Screenshots / Evidence
 
-| What | File |
-|------|------|
+
+| What           | File                                                 |
+| -------------- | ---------------------------------------------------- |
 | None this week | *(Add explorer screenshots or tx hashes in Week 3.)* |
+
 
 ---
 
@@ -80,7 +77,7 @@
 
 - **pnpm** workspace (`contracts/*`, `frontend`, `backend`).
 - **TypeScript** — `contracts/on-chain-script` builds with `tsc` + `esbuild` + `ckb-debugger`.
-- **`ckb-debugger`** — Windows binary under `tools/ckb-debugger.exe` (see `contracts/on-chain-script/package.json`).
+- `**ckb-debugger`** — Windows binary under `tools/ckb-debugger.exe` (see `contracts/on-chain-script/package.json`).
 - **Jest + `ckb-testtool`** — `contracts/on-chain-script-tests`; tests shell out to `ckb-debugger` via PATH set in `run-jest.cjs`.
 - **OffCKB / local node** — not required for Week 2 VM tests; planned for Week 3.
 
@@ -92,3 +89,4 @@
 - **Deploy** `dist/index.bc` and required **cell deps** (including `ckb-js-vm` per Nervos JS VM docs); store deployment metadata (e.g. `scripts.json` / outpoints) for CCC.
 - **End-to-end CCC flows** in `backend/` (or small scripts): fund escrow cell, then **spend** each path (release, dispute refund, timeout refund) with correct witnesses and `since` where needed; capture **tx hashes** for regression.
 - **Optional:** repeat the same four scenarios on **public testnet** once local devnet is stable.
+

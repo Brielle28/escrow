@@ -5,6 +5,7 @@
     "build": "pnpm -r run build",
     "build:contracts": "pnpm --filter js-vm run build",
     "test": "pnpm --filter js-vm-tests run test",
+    "test:integration": "pnpm --filter escrow-backend run integration:devnet",
     "typecheck": "pnpm -r --if-present run typecheck",
     "dev": "pnpm --filter escrow-web dev",
     "lint": "pnpm -r run lint --if-present",

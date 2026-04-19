@@ -1,6 +1,8 @@
 # Dependencies
 node_modules
-
+node_modules/
+plan/
+report/
 # Build outputs (any package: on-chain dist/, Vite frontend/dist/, etc.)
 dist
 dist-ssr

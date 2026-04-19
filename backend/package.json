@@ -6,10 +6,15 @@
   "description": "Headless TypeScript + CCC: integration tests, deploy helpers, RPC (no UI).",
   "scripts": {
     "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "integration:devnet": "tsx src/integration/runIntegration.ts"
   },
   "dependencies": {
-    "@ckb-ccc/ccc": "^1.1.25"
+    "@ckb-ccc/ccc": "^1.1.25",
+    "@ckb-ccc/core": "^1.12.5",
+    "@noble/secp256k1": "^1.7.1",
+    "dotenv": "^17.4.2",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "typescript": "~5.8.2"

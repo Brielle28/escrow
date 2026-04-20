@@ -4,6 +4,10 @@
   "scripts": {
     "build": "pnpm -r run build",
     "build:contracts": "pnpm --filter js-vm run build",
+    "devnet:node": "offckb node",
+    "deploy:devnet": "offckb deploy --network devnet -y --target ./contracts/on-chain-script/dist/index.bc --output ./deployment",
+    "system-scripts:devnet": "offckb system-scripts --export-style ccc -o ./deployment/system-scripts.devnet.json",
+    "prep:devnet": "pnpm run build:contracts && pnpm run deploy:devnet && pnpm run system-scripts:devnet",
     "test": "pnpm --filter js-vm-tests run test",
     "test:integration": "pnpm --filter escrow-backend run integration:devnet",
     "typecheck": "pnpm -r --if-present run typecheck",

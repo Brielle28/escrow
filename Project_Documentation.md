@@ -128,9 +128,9 @@ Phase 5: Frontend (shell started; flows after Week 3–4)
 
 **How to achieve it:**
 
-1. `pnpm run build:contracts` (from repo root) to produce deployment artifacts (`contracts/on-chain-script/dist/`)
-2. Deploy to Devnet, e.g. `pnpm run deploy --network devnet` (or OffCKB deploy flow you adopt — align with [Simple Lock](https://docs.nervos.org/docs/dapp/simple-lock) **Deploy** section)
-3. Save **`scripts.json`** / deployment metadata your **CCC** code will read for **code hashes**, **hash types**, and **cell deps**
+1. In one terminal, start local devnet: **`pnpm devnet:node`** (same as `offckb node`) — leave it running.
+2. After bytecode or chain changes: **`pnpm run prep:devnet`** — runs **`build:contracts`** → **`deploy:devnet`** (OffCKB deploy, updates **`deployment/scripts.json`**) → **`system-scripts:devnet`** (refreshes **`deployment/system-scripts.devnet.json`** for CCC). See **Day-to-day commands** below for individual steps.
+3. **`scripts.json`** / deployment metadata are produced under **`deployment/`** for **CCC** (**code hashes**, **hash types**, **cell deps** including **`ckb-js-vm`** + bytecode cell — align with [Simple Lock](https://docs.nervos.org/docs/dapp/simple-lock) **Deploy** section).
 4. Write **integration** TypeScript modules (CCC) that:
    - Create cells locked by your escrow lock
    - Build transactions that exercise each path with the correct **witness**
@@ -143,12 +143,12 @@ Test 3 → Timeout path: after timelock, depositor can complete timeout refund p
 Test 4 → Dispute path: arbiter + depositor refund (or your defined dispute outcome) succeeds
 ```
 
-6. Run each test from the terminal (e.g. `pnpm test:integration` or `tsx scripts/...`)
+6. Run each test from the terminal: **`pnpm test:integration`** (from repo root), or set **`INTEGRATION_SPEND_MODE=release|dispute|timeout`** in **`backend/`** for a specific spend path.
 
 **Success check**
 
 - All four scenarios **pass** against **local Devnet**
-- You can point to **on-chain txs** (hashes) for each scenario
+- You can point to **on-chain txs** (**hashes**) for each scenario — see **Transaction hashes** under Day-to-day commands (these are for **debugging**, **audit**, and **regression**, not “who the arbiter is”).
 - **`scripts.json` / cell deps** are correct (no missing `ckb-js-vm` dep, wrong args layout, or wrong bytecode cell reference)
 
 ---
@@ -220,7 +220,7 @@ escrow/                              ← repository root (name on disk may be es
 └── README.md
 ```
 
-**`deployment/`** and **`scripts/deploy.ts`** can be added when you wire OffCKB deploy outputs; keep generated **`scripts.json`** out of git or commit it—team choice (see `.gitignore` optional `deployment/` comment).
+**`deployment/`** holds **`scripts.json`** and **`system-scripts.devnet.json`** produced by **`pnpm run deploy:devnet`** / **`pnpm run prep:devnet`**; commit or gitignore—team choice (see `.gitignore` optional `deployment/` comment).
 
 ---
 
@@ -235,6 +235,36 @@ These are the commands you will use most often after cloning:
 | **`pnpm run build:contracts`** | Builds the on-chain script: bundle → **`dist/index.js`** → **`dist/index.bc`**. Requires **`ckb-debugger`** (use `setup:tools` on Windows, or ensure debugger is on `PATH`). |
 | **`pnpm run test`** | Runs **Jest** + **ckb-testtool** tests under **`contracts/on-chain-script-tests/`** (same **`ckb-debugger`** requirement). |
 | **`pnpm run dev`** | Starts the **Vite** dev server for **`frontend/`** (default **http://localhost:5173**). |
+| **`pnpm devnet:node`** | Starts **OffCKB** local devnet (`offckb node`). Keep this terminal open while developing; integration tests expect RPC to be up. |
+| **`pnpm run deploy:devnet`** | Deploys **`contracts/on-chain-script/dist/index.bc`** and writes **`deployment/scripts.json`** (requires devnet running; uses **`offckb deploy -y`**). Run after **`build:contracts`** if bytecode changed. |
+| **`pnpm run system-scripts:devnet`** | Exports CCC-style system scripts to **`deployment/system-scripts.devnet.json`** (`offckb system-scripts`). Refresh after devnet/tooling changes so **`ckb-js-vm`** deps match your chain. |
+| **`pnpm run prep:devnet`** | One-shot: **`build:contracts`** → **`deploy:devnet`** → **`system-scripts:devnet`**. Use before **`test:integration`** when you changed the contract or reset the chain. |
+| **`pnpm test:integration`** | Runs **`backend`** CCC integration (`runIntegration.ts`) against **`CKB_RPC_URL`** in **`backend/.env.local`**. Optional env: **`INTEGRATION_SPEND_MODE`** (`release` / `dispute` / `timeout`). |
+
+**Transaction hashes (fund / spend txs)**
+
+Saving or logging **transaction hashes** is optional but useful for:
+
+- **Debugging** — trace which tx failed or which cell was created.
+- **Audit / transparency** — anyone (buyer, seller, **arbiter**, support, or an external reviewer) can look up the same txs on an **explorer** and verify what happened on-chain.
+
+Each **`pnpm test:integration`** attempt **appends one JSON line** to **`artifacts/integration-tx-history.jsonl`**:
+
+- **`"status":"success"`** — fund tx **and** spend tx both completed (`fundTxHash`, `spendTxHash`, **`arbiterPubkeyHash`**, etc.).
+- **`"status":"failed"`** — anything threw before finishing (RPC/setup error, verification failure, missing cell, etc.). Includes **`error`** message and any partial **`fundTxHash` / `spendTxHash`** if those steps ran before failure.
+
+Use **`status`** in a future UI to show **only successes** to end users; **`failed`** lines are for **developers / ops** (debugging regression, partial on-chain state).
+
+**What a hash does and does *not* do:** On CKB, any transaction that is **committed** in a block has a **tx hash** and can be looked up. Failed runs may still leave **partial** txs on-chain — the **`failed`** history line preserves what we know **off-chain**.
+
+**“Who is at fault?”** Tx hashes show **what the chain accepted** — which unlock **path** ran (**release**, **dispute**, or **timeout**) and which **locks / signatures** the script verified. They do **not** by themselves prove someone was “wrong” in a business sense; they prove **rules were satisfied** on that tx. For disputes, humans (or contracts off-chain) decide liability; the chain proves **which authorized path** was executed.
+
+In production the **three roles map to users** (wallets / people): **depositor**, **recipient**, **arbiter** — not abstract roles only. Integration uses **deterministic fake keys** for speed; live apps use **real user keys** encoded into the escrow payload.
+
+**Who is the arbiter in this repo?**
+
+- **Integration / dev (`runIntegration.ts`):** The arbiter is **not** a fixed person — it is a **deterministic test key** derived from **`INTEGRATION_PARTY_SEED`** (default `escrow-phase-d-devnet`) plus the role suffix **`arbiter`**. Its **public-key hash** is baked into the on-chain escrow payload (`arbiterPkHash`). The same derivation produces **depositor** and **recipient** keys (`depositor`, `recipient` suffixes).
+- **Production:** The arbiter is whoever the **buyer and seller agree on** before locking funds — encoded in the escrow **payload** as **`arbiterPkHash`** (and enforced by signatures from that party on **release** and **dispute** paths). Your backend or UI will supply real keys when you move past local integration.
 
 **Windows quick start for tooling**
 
@@ -262,17 +292,17 @@ With the root **`.gitignore`**, **`git add .`** from the repo root should **not*
 
 | Phase | Status |
 |-------|--------|
-| Week 1 — Setup & Environment | Not started |
-| Week 2 — Escrow lock (TypeScript / ckb-js-vm) | Not started |
-| Week 3 — Deploy & integration tests (CCC) | Not started |
-| Week 4 — Testnet & full testing | Not started |
+| Week 1 — Setup & Environment | Done (tooling + OffCKB pattern in repo) |
+| Week 2 — Escrow lock (TypeScript / ckb-js-vm) | Done (script + VM tests; iterate as needed) |
+| Week 3 — Deploy & integration tests (CCC) | Done for **local OffCKB devnet** (`pnpm test:integration`; deploy/prep scripts in root **`package.json`**) |
+| Week 4 — Testnet & full testing | Not started — see **`plan/week-4-testnet-spec.md`** |
 | Week 5 — Frontend | Shell (wallet + layout); flows pending |
 
 ---
 
 ## Next Step
 
-When you are ready, start with **Week 1**: OffCKB Devnet + a building **`ckb-js-vm`** TypeScript project + CCC wired for later integration tests.
+Start **Week 4** using the specification **`plan/week-4-testnet-spec.md`** (testnet deploy, testnet-specific deployment metadata, CCC integration against public testnet RPC, four scenarios + documented explorer hashes). Alternatively advance **backend API + frontend** escrow actions using the same CCC patterns validated in **`backend/src/integration/`** — typically after testnet confidence or in parallel if staffed.
 
 ---
 

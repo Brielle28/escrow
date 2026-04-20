@@ -4,12 +4,16 @@
  * Prereqs: `offckb node`, `build:contracts`, deploy, `deployment/scripts.json`,
  * `offckb system-scripts --export-style ccc -o deployment/system-scripts.devnet.json`
  *
- * `backend/.env.local`: CKB_RPC_URL, DEPLOYER_PRIVATE_KEY
- * Optional: INTEGRATION_SPEND_MODE=release|dispute|timeout (default: release)
+ * `backend/.env.local`: CKB_RPC_URL, DEPLOYER_PRIVATE_KEY (set once; no redeploy churn).
+ * Optional: INTEGRATION_SPEND_MODE=release|dispute|timeout (default release — omit if fine).
  *           INTEGRATION_PARTY_SEED, INTEGRATION_MIN_SINCE, INTEGRATION_ESCROW_CAPACITY
+ *
+ * Always-success lock + deps come from system-scripts.devnet.json (not testnet genesis).
+ * Signer.prepareTransaction uses getKnownScript(Secp256k1Blake160) — patch client with OffCKB devnet secp deps.
  */
 import { createHash, createHmac } from "node:crypto";
 import {
+  Cell,
   CellInput,
   ClientPublicTestnet,
   KnownScript,
@@ -34,6 +38,7 @@ import {
   buildEscrowPayloadV1,
   pubkeyHashHex,
 } from "./escrowPayload.js";
+import { appendIntegrationTxHistory } from "./txHistory.js";
 
 secp.utils.hmacSha256Sync = (key: Uint8Array, ...messages: Uint8Array[]) => {
   const h = createHmac("sha256", Buffer.from(key));
@@ -89,9 +94,9 @@ async function attachEscrowDeps(
   client: Client,
   bytecodeInfo: ScriptInfo,
   vmInfo: ScriptInfo,
+  alwaysInfo: ScriptInfo,
 ): Promise<void> {
-  const always = await client.getKnownScript(KnownScript.AlwaysSuccess);
-  await tx.addCellDepInfos(client, ...always.cellDeps);
+  await tx.addCellDepInfos(client, ...alwaysInfo.cellDeps);
   await tx.addCellDepInfos(client, ...vmInfo.cellDeps);
   await tx.addCellDepInfos(client, ...bytecodeInfo.cellDeps);
 }
@@ -124,19 +129,105 @@ function vmInfoFromSystem(): ScriptInfo {
   return ScriptInfo.from(raw);
 }
 
+function alwaysInfoFromSystem(): ScriptInfo {
+  const s = readSystemScriptsDevnet();
+  const raw = s.devnet.always_success.script as {
+    codeHash: string;
+    hashType: string;
+    cellDeps: CellDepInfoLike[];
+  };
+  return ScriptInfo.from(raw);
+}
+
+function secpInfoFromSystem(): ScriptInfo {
+  const s = readSystemScriptsDevnet();
+  const raw = s.devnet.secp256k1_blake160_sighash_all.script as {
+    codeHash: string;
+    hashType: string;
+    cellDeps: CellDepInfoLike[];
+  };
+  return ScriptInfo.from(raw);
+}
+
+/** CCC's ClientPublicTestnet resolves known scripts to public-testnet genesis; OffCKB devnet needs local outpoints. */
+function patchKnownScriptSecpForDevnet(client: Client, secpDevnet: ScriptInfo): void {
+  const inner = client.getKnownScript.bind(client);
+  (
+    client as unknown as {
+      getKnownScript: typeof inner;
+    }
+  ).getKnownScript = async (known: KnownScript) => {
+    if (known === KnownScript.Secp256k1Blake160) {
+      return secpDevnet;
+    }
+    return inner(known);
+  };
+}
+
+/** Prefer fund-tx output scan: `findSingletonCellByType` matches type only — repeated runs share type args and can return the wrong live cell. */
+async function liveEscrowCellFromFundTx(
+  client: Client,
+  fundTxHash: Hex,
+  alwaysSuccessLock: Script,
+  escrowTypeScript: Script,
+): Promise<Cell> {
+  const res = await client.getTransaction(fundTxHash);
+  const tx = res?.transaction;
+  if (!tx) {
+    throw new Error(`getTransaction(${fundTxHash}) returned empty`);
+  }
+  for (let i = 0; i < tx.outputs.length; i++) {
+    const out = tx.outputs[i];
+    if (
+      out.type &&
+      out.type.eq(escrowTypeScript) &&
+      out.lock.eq(alwaysSuccessLock)
+    ) {
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const live = await client.getCellLiveNoCache(
+          { txHash: fundTxHash, index: BigInt(i) },
+          true,
+          false,
+        );
+        if (live) {
+          return live;
+        }
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      throw new Error(
+        `Escrow output ${i} of fund tx not live yet (indexer/RPC lag)`,
+      );
+    }
+  }
+  throw new Error(
+    "Fund tx has no output with always_success lock + escrow type script",
+  );
+}
+
 async function main(): Promise<void> {
+  let fundTxHash: Hex | undefined;
+  let spendHash: Hex | undefined;
+  let rpc = "";
+  let rpcHost = "";
+  let mode = "";
+  let arbiterPkHash = "";
+
   loadEnv();
-  const rpc = process.env.CKB_RPC_URL;
+
+  try {
   const pkHex = process.env.DEPLOYER_PRIVATE_KEY;
-  if (!rpc?.startsWith("http")) {
+  rpc = process.env.CKB_RPC_URL ?? "";
+  if (!rpc.startsWith("http")) {
     throw new Error("Set CKB_RPC_URL in backend/.env.local");
   }
   if (!pkHex?.startsWith("0x")) {
     throw new Error("Set DEPLOYER_PRIVATE_KEY (0x…) in backend/.env.local");
   }
 
+  rpcHost = new URL(rpc).host;
+
   const seed = process.env.INTEGRATION_PARTY_SEED ?? "escrow-phase-d-devnet";
-  const mode = (process.env.INTEGRATION_SPEND_MODE ?? "release").toLowerCase();
+  mode = (process.env.INTEGRATION_SPEND_MODE ?? "release").toLowerCase();
 
   const depositorPriv = privFromSeed(seed, "depositor");
   const recipientPriv = privFromSeed(seed, "recipient");
@@ -148,9 +239,12 @@ async function main(): Promise<void> {
 
   const depositorPkHash = pubkeyHashHex(depositorPub);
   const recipientPkHash = pubkeyHashHex(recipientPub);
-  const arbiterPkHash = pubkeyHashHex(arbiterPub);
+  arbiterPkHash = pubkeyHashHex(arbiterPub);
 
   const client = new ClientPublicTestnet({ url: rpc });
+
+  const secpInfo = secpInfoFromSystem();
+  patchKnownScriptSecpForDevnet(client, secpInfo);
 
   const scriptsJson = readScriptsJson();
   const bytecodeEntry = scriptsJson.devnet["index.bc"];
@@ -161,6 +255,7 @@ async function main(): Promise<void> {
   }
   const bytecodeInfo = scriptInfoFromDeployEntry(bytecodeEntry);
   const vmInfo = vmInfoFromSystem();
+  const alwaysInfo = alwaysInfoFromSystem();
 
   const depositorLock = await lockSecp(client, depositorPub);
   const recipientLock = await lockSecp(client, recipientPub);
@@ -188,11 +283,11 @@ async function main(): Promise<void> {
     args: escrowTypeArgs,
   });
 
-  const alwaysSuccessLock = await Script.fromKnownScript(
-    client,
-    KnownScript.AlwaysSuccess,
-    "0x",
-  );
+  const alwaysSuccessLock = Script.from({
+    codeHash: alwaysInfo.codeHash,
+    hashType: alwaysInfo.hashType,
+    args: "0x",
+  });
 
   const deploySigner = new SignerCkbPrivateKey(client, pkHex as Hex);
 
@@ -210,7 +305,7 @@ async function main(): Promise<void> {
     outputsData: [],
   });
 
-  await attachEscrowDeps(fundTx, client, bytecodeInfo, vmInfo);
+  await attachEscrowDeps(fundTx, client, bytecodeInfo, vmInfo, alwaysInfo);
 
   fundTx.addOutput(
     {
@@ -229,18 +324,17 @@ async function main(): Promise<void> {
 
   const fundPrepared = await deploySigner.prepareTransaction(fundTx);
   const fundSigned = await deploySigner.signOnlyTransaction(fundPrepared);
-  const fundTxHash = await client.sendTransactionNoCache(fundSigned, "passthrough");
+  fundTxHash = await client.sendTransactionNoCache(fundSigned, "passthrough");
   console.log("[D1] lock funds tx:", fundTxHash);
 
-  const escrowLiveCell = await client.getCellLiveNoCache(
-    { txHash: fundTxHash, index: 0 },
-    true,
-    false,
+  await client.waitTransaction(fundTxHash, 0, 120_000, 500);
+
+  const escrowLive = await liveEscrowCellFromFundTx(
+    client,
+    fundTxHash,
+    alwaysSuccessLock,
+    escrowTypeScript,
   );
-  if (!escrowLiveCell) {
-    throw new Error("Escrow cell not live after fund tx");
-  }
-  const escrowLive = escrowLiveCell;
 
   /** Complete input metadata before hashing (same as VM tests). */
   async function prepareSpendTx(tx: Transaction): Promise<void> {
@@ -268,7 +362,7 @@ async function main(): Promise<void> {
       outputsData: [],
     });
 
-    await attachEscrowDeps(tx, client, bytecodeInfo, vmInfo);
+    await attachEscrowDeps(tx, client, bytecodeInfo, vmInfo, alwaysInfo);
 
     tx.addInput(
       CellInput.from({
@@ -304,8 +398,6 @@ async function main(): Promise<void> {
     return client.sendTransactionNoCache(tx, "passthrough");
   }
 
-  let spendHash: Hex;
-
   if (mode === "release") {
     spendHash = await spendWithWitness({
       tag: TAG_RELEASE,
@@ -337,6 +429,54 @@ async function main(): Promise<void> {
   }
 
   console.log("\nSummary:", JSON.stringify({ fund: fundTxHash, spend: spendHash, mode }, null, 2));
+
+  appendIntegrationTxHistory({
+    status: "success",
+    ts: new Date().toISOString(),
+    network: "offckb-devnet",
+    rpcHost,
+    mode,
+    fundTxHash: fundTxHash!,
+    spendTxHash: spendHash!,
+    arbiterPubkeyHash: arbiterPkHash,
+  });
+  console.log(
+    "[history] success → artifacts/integration-tx-history.jsonl (filter status=success for UI)",
+  );
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e));
+    try {
+      let host = rpcHost;
+      if (!host && rpc.startsWith("http")) {
+        try {
+          host = new URL(rpc).host;
+        } catch {
+          host = "invalid-url";
+        }
+      } else if (!host) {
+        host = "unset";
+      }
+      appendIntegrationTxHistory({
+        status: "failed",
+        ts: new Date().toISOString(),
+        network: "offckb-devnet",
+        rpcHost: host,
+        mode:
+          mode ||
+          (process.env.INTEGRATION_SPEND_MODE ?? "release").toLowerCase(),
+        fundTxHash,
+        spendTxHash: spendHash,
+        arbiterPubkeyHash: arbiterPkHash || undefined,
+        error: err.message,
+      });
+      console.warn(
+        "[history] failed run → artifacts/integration-tx-history.jsonl (for developers; omit in UI if desired)",
+      );
+    } catch (logErr) {
+      console.warn("[history] could not append failed run:", logErr);
+    }
+    throw err;
+  }
 }
 
 main().catch((e) => {

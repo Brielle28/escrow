@@ -11,3 +11,8 @@ export function repoRoot(): string {
 export function deploymentDir(): string {
   return join(repoRoot(), "deployment");
 }
+
+/** Append-only integration run log (JSON Lines): fund + spend tx hashes per run. */
+export function integrationTxHistoryPath(): string {
+  return join(repoRoot(), "artifacts", "integration-tx-history.jsonl");
+}

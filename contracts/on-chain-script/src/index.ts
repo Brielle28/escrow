@@ -139,6 +139,13 @@ function main(): number {
     minSince,
   } = parsed;
 
+  /** Funding tx: escrow type only appears on an output — no input in this script group, so witness is absent. */
+  try {
+    HighLevel.loadCell(0, bindings.SOURCE_GROUP_INPUT);
+  } catch {
+    return Err.Ok;
+  }
+
   const tx = HighLevel.loadTransaction();
   const msg = escrowSigningMessage(tx);
 

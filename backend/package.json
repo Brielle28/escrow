@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "integration:devnet": "tsx src/integration/runIntegration.ts"
+    "integration:devnet": "tsx src/integration/runIntegration.ts",
+    "integration:testnet": "node scripts/integration-testnet.mjs"
   },
   "dependencies": {
     "@ckb-ccc/ccc": "^1.1.25",

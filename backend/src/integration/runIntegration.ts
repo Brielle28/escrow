@@ -1,15 +1,13 @@
 /**
  * Phase D — CCC integration against local OffCKB devnet.
  *
- * Prereqs: `offckb node`, `build:contracts`, deploy, `deployment/scripts.json`,
- * `offckb system-scripts --export-style ccc -o deployment/system-scripts.devnet.json`
+ * Prereqs: `build:contracts`, deploy, `deployment/scripts.json`, system-scripts JSON for your chain.
+ * Devnet: `offckb node`, `pnpm prep:devnet`. Testnet: `pnpm prep:testnet`, `CKB_RPC_URL` = public testnet RPC.
  *
- * `backend/.env.local`: CKB_RPC_URL, DEPLOYER_PRIVATE_KEY (set once; no redeploy churn).
- * Optional: INTEGRATION_SPEND_MODE=release|dispute|timeout (default release — omit if fine).
- *           INTEGRATION_PARTY_SEED, INTEGRATION_MIN_SINCE, INTEGRATION_ESCROW_CAPACITY
+ * `backend/.env.local`: CKB_RPC_URL, DEPLOYER_PRIVATE_KEY.
+ * CKB_NETWORK=devnet|testnet (default devnet). OffCKB devnet needs secp patch; public testnet uses CCC defaults.
  *
- * Always-success lock + deps come from system-scripts.devnet.json (not testnet genesis).
- * Signer.prepareTransaction uses getKnownScript(Secp256k1Blake160) — patch client with OffCKB devnet secp deps.
+ * Optional: INTEGRATION_SPEND_MODE=release|dispute|timeout, INTEGRATION_PARTY_SEED, INTEGRATION_MIN_SINCE, INTEGRATION_ESCROW_CAPACITY
  */
 import { createHash, createHmac } from "node:crypto";
 import {
@@ -32,7 +30,12 @@ import {
 } from "@ckb-ccc/core";
 import * as secp from "@noble/secp256k1";
 import { loadEnv } from "./loadEnv.js";
-import { readScriptsJson, readSystemScriptsDevnet } from "./deployment.js";
+import {
+  bytecodeEntryForChain,
+  readScriptsJson,
+  readSystemScriptsChain,
+  type ChainNetwork,
+} from "./deployment.js";
 import { scriptInfoFromDeployEntry } from "./cellDeps.js";
 import {
   buildEscrowPayloadV1,
@@ -119,9 +122,9 @@ function witnessLock(
   return hexFrom(out);
 }
 
-function vmInfoFromSystem(): ScriptInfo {
-  const s = readSystemScriptsDevnet();
-  const raw = s.devnet.ckb_js_vm.script as {
+function vmInfoFromChain(network: ChainNetwork): ScriptInfo {
+  const s = readSystemScriptsChain(network);
+  const raw = s.ckb_js_vm.script as {
     codeHash: string;
     hashType: string;
     cellDeps: CellDepInfoLike[];
@@ -129,9 +132,9 @@ function vmInfoFromSystem(): ScriptInfo {
   return ScriptInfo.from(raw);
 }
 
-function alwaysInfoFromSystem(): ScriptInfo {
-  const s = readSystemScriptsDevnet();
-  const raw = s.devnet.always_success.script as {
+function alwaysInfoFromChain(network: ChainNetwork): ScriptInfo {
+  const s = readSystemScriptsChain(network);
+  const raw = s.always_success.script as {
     codeHash: string;
     hashType: string;
     cellDeps: CellDepInfoLike[];
@@ -139,14 +142,18 @@ function alwaysInfoFromSystem(): ScriptInfo {
   return ScriptInfo.from(raw);
 }
 
-function secpInfoFromSystem(): ScriptInfo {
-  const s = readSystemScriptsDevnet();
-  const raw = s.devnet.secp256k1_blake160_sighash_all.script as {
+function secpInfoFromChain(network: ChainNetwork): ScriptInfo {
+  const s = readSystemScriptsChain(network);
+  const raw = s.secp256k1_blake160_sighash_all.script as {
     codeHash: string;
     hashType: string;
     cellDeps: CellDepInfoLike[];
   };
   return ScriptInfo.from(raw);
+}
+
+function historyNetworkLabel(chain: ChainNetwork): "offckb-devnet" | "ckb-testnet" {
+  return chain === "devnet" ? "offckb-devnet" : "ckb-testnet";
 }
 
 /** CCC's ClientPublicTestnet resolves known scripts to public-testnet genesis; OffCKB devnet needs local outpoints. */
@@ -211,6 +218,7 @@ async function main(): Promise<void> {
   let rpcHost = "";
   let mode = "";
   let arbiterPkHash = "";
+  let chainNet: ChainNetwork = "devnet";
 
   loadEnv();
 
@@ -223,6 +231,12 @@ async function main(): Promise<void> {
   if (!pkHex?.startsWith("0x")) {
     throw new Error("Set DEPLOYER_PRIVATE_KEY (0x…) in backend/.env.local");
   }
+
+  const chainRaw = (process.env.CKB_NETWORK ?? "devnet").toLowerCase();
+  if (chainRaw !== "devnet" && chainRaw !== "testnet") {
+    throw new Error("CKB_NETWORK must be devnet or testnet");
+  }
+  chainNet = chainRaw as ChainNetwork;
 
   rpcHost = new URL(rpc).host;
 
@@ -243,19 +257,25 @@ async function main(): Promise<void> {
 
   const client = new ClientPublicTestnet({ url: rpc });
 
-  const secpInfo = secpInfoFromSystem();
-  patchKnownScriptSecpForDevnet(client, secpInfo);
+  if (chainNet === "devnet") {
+    const secpInfo = secpInfoFromChain("devnet");
+    patchKnownScriptSecpForDevnet(client, secpInfo);
+  }
 
   const scriptsJson = readScriptsJson();
-  const bytecodeEntry = scriptsJson.devnet["index.bc"];
+  const bytecodeEntry = bytecodeEntryForChain(scriptsJson, chainNet);
   if (!bytecodeEntry) {
     throw new Error(
-      'deployment/scripts.json missing devnet["index.bc"] — deploy first',
+      `deployment/scripts.json missing ${chainNet}["index.bc"] — run pnpm prep:${chainNet === "testnet" ? "testnet" : "devnet"}`,
     );
   }
   const bytecodeInfo = scriptInfoFromDeployEntry(bytecodeEntry);
-  const vmInfo = vmInfoFromSystem();
-  const alwaysInfo = alwaysInfoFromSystem();
+  const vmInfo = vmInfoFromChain(chainNet);
+  /** Public testnet CCC export often omits `always_success` under `testnet` — use known script. OffCKB devnet still uses JSON. */
+  const alwaysInfo =
+    chainNet === "testnet"
+      ? await client.getKnownScript(KnownScript.AlwaysSuccess)
+      : alwaysInfoFromChain("devnet");
 
   const depositorLock = await lockSecp(client, depositorPub);
   const recipientLock = await lockSecp(client, recipientPub);
@@ -428,12 +448,20 @@ async function main(): Promise<void> {
     );
   }
 
-  console.log("\nSummary:", JSON.stringify({ fund: fundTxHash, spend: spendHash, mode }, null, 2));
+  const explorerHint =
+    chainNet === "testnet"
+      ? "https://pudge.explorer.nervos.org/transaction/"
+      : "(local devnet — use node logs / RPC)";
+  console.log("\nSummary:", JSON.stringify({ fund: fundTxHash, spend: spendHash, mode, chain: chainNet }, null, 2));
+  if (chainNet === "testnet") {
+    console.log("[explorer] fund:  ", explorerHint + fundTxHash);
+    console.log("[explorer] spend: ", explorerHint + spendHash);
+  }
 
   appendIntegrationTxHistory({
     status: "success",
     ts: new Date().toISOString(),
-    network: "offckb-devnet",
+    network: historyNetworkLabel(chainNet),
     rpcHost,
     mode,
     fundTxHash: fundTxHash!,
@@ -459,7 +487,7 @@ async function main(): Promise<void> {
       appendIntegrationTxHistory({
         status: "failed",
         ts: new Date().toISOString(),
-        network: "offckb-devnet",
+        network: historyNetworkLabel(chainNet),
         rpcHost: host,
         mode:
           mode ||

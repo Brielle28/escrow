@@ -2,12 +2,15 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { integrationTxHistoryPath } from "./paths.js";
 
+/** Networks we log for integration runs (explorer vs local). */
+export type IntegrationHistoryNetwork = "offckb-devnet" | "ckb-testnet";
+
 /** One JSON line per integration attempt — include failures for developers / ops (UI can filter `status === "success"`). */
 export type IntegrationTxHistoryEntry =
   | {
       status: "success";
       ts: string;
-      network: "offckb-devnet";
+      network: IntegrationHistoryNetwork;
       rpcHost: string;
       mode: string;
       fundTxHash: string;
@@ -17,7 +20,7 @@ export type IntegrationTxHistoryEntry =
   | {
       status: "failed";
       ts: string;
-      network: "offckb-devnet";
+      network: IntegrationHistoryNetwork;
       rpcHost: string;
       mode: string;
       /** Present if fund tx was broadcast before failure */

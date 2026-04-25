@@ -239,7 +239,13 @@ These are the commands you will use most often after cloning:
 | **`pnpm run deploy:devnet`** | Deploys **`contracts/on-chain-script/dist/index.bc`** and writes **`deployment/scripts.json`** (requires devnet running; uses **`offckb deploy -y`**). Run after **`build:contracts`** if bytecode changed. |
 | **`pnpm run system-scripts:devnet`** | Exports CCC-style system scripts to **`deployment/system-scripts.devnet.json`** (`offckb system-scripts`). Refresh after devnet/tooling changes so **`ckb-js-vm`** deps match your chain. |
 | **`pnpm run prep:devnet`** | One-shot: **`build:contracts`** → **`deploy:devnet`** → **`system-scripts:devnet`**. Use before **`test:integration`** when you changed the contract or reset the chain. |
-| **`pnpm test:integration`** | Runs **`backend`** CCC integration (`runIntegration.ts`) against **`CKB_RPC_URL`** in **`backend/.env.local`**. Optional env: **`INTEGRATION_SPEND_MODE`** (`release` / `dispute` / `timeout`). |
+| **`pnpm run deploy:testnet`** | Deploys bytecode to **CKB public testnet** — pass **`--privkey`** yourself, or prefer **`pnpm run deploy:testnet:env`**. Updates **`deployment/scripts.json`** `testnet` section. |
+| **`pnpm run deploy:testnet:env`** | Same as **`deploy:testnet`** but **`--privkey`** is read from **`backend/.env.local`** **`DEPLOYER_PRIVATE_KEY`** (nothing secret pasted in the terminal). Requires funded testnet balance on that key. |
+| **`pnpm run system-scripts:testnet`** | Writes **`deployment/system-scripts.testnet.json`** for CCC (**Pudge** deps). |
+| **`pnpm run prep:testnet`** | **`build:contracts`** → **`deploy:testnet`** → **`system-scripts:testnet`**. |
+| **`pnpm run prep:testnet:env`** | Same chain, but deploy uses **`DEPLOYER_PRIVATE_KEY`** from **`backend/.env.local`**. Prefer this so you never type the key on the CLI. |
+| **`pnpm test:integration`** | Local **devnet** integration (default **`CKB_NETWORK=devnet`**). **`INTEGRATION_SPEND_MODE`** optional. |
+| **`pnpm test:integration:testnet`** | Same runner with **`CKB_NETWORK=testnet`**; set **`backend/.env.local`** **`CKB_RPC_URL`** to testnet RPC (e.g. **`https://testnet.ckb.dev/rpc`**) and a **funded** **`DEPLOYER_PRIVATE_KEY`**. See **`artifacts/WEEK4_TESTNET_STATUS.md`**. |
 
 **Transaction hashes (fund / spend txs)**
 

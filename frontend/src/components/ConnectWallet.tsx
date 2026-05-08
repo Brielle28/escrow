@@ -2,6 +2,12 @@ import { ccc, useCcc, useSigner } from "@ckb-ccc/connector-react";
 import { useEffect, useState } from "react";
 import { truncateAddress } from "../utils/truncateAddress";
 
+const pillBtn =
+  "inline-flex max-w-[min(100%,280px)] cursor-pointer items-center gap-2.5 rounded-full border border-gray-200 bg-gray-50 py-1.5 pl-1.5 pr-3.5 font-inherit text-gray-900 hover:border-brand-500/45";
+
+const connectBtn =
+  "inline-flex cursor-pointer items-center justify-center rounded-lg bg-gradient-to-b from-[#6bc77e] to-brand-500 px-[1.15rem] py-2 text-sm font-semibold text-white shadow-none hover:brightness-[1.03]";
+
 export function ConnectWallet() {
   const { open, wallet } = useCcc();
   const signer = useSigner();
@@ -30,19 +36,13 @@ export function ConnectWallet() {
 
   if (wallet) {
     return (
-      <button type="button" className="wallet-pill" onClick={() => open()}>
+      <button type="button" className={pillBtn} onClick={() => open()}>
         {wallet.icon ? (
-          <img
-            src={wallet.icon}
-            alt=""
-            className="wallet-pill__icon"
-            width={32}
-            height={32}
-          />
+          <img src={wallet.icon} alt="" className="size-8 shrink-0 rounded-full" width={32} height={32} />
         ) : null}
-        <span className="wallet-pill__meta">
-          <span className="wallet-pill__bal">{balance || "—"} CKB</span>
-          <span className="wallet-pill__addr">
+        <span className="flex min-w-0 flex-col items-start text-left">
+          <span className="text-[0.82rem] font-semibold text-gray-900">{balance || "—"} CKB</span>
+          <span className="max-w-[200px] truncate text-[0.72rem] text-gray-500">
             {address ? truncateAddress(address, 12, 8) : "…"}
           </span>
         </span>
@@ -51,7 +51,7 @@ export function ConnectWallet() {
   }
 
   return (
-    <button type="button" className="btn-primary" onClick={() => open()}>
+    <button type="button" className={connectBtn} onClick={() => open()}>
       Connect wallet
     </button>
   );

@@ -1,18 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
 
-:root {
-  --bg: #090b0f;
-  --text: #f4f1ea;
-  --muted: #9aa3b2;
-  --border: rgba(255, 255, 255, 0.08);
-  --accent: #d4a84b;
-  --accent-soft: #e3bc6a;
-}
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-500: #55b36b;
+  --color-brand-600: #479a5c;
+  --color-brand-50: rgba(85, 179, 107, 0.08);
 }
 
 html,
@@ -22,8 +16,8 @@ body {
 }
 
 body {
-  font-family: "DM Sans", system-ui, -apple-system, sans-serif;
-  background: var(--bg);
+  font-family: var(--font-sans);
+  background: #ffffff;
   -webkit-font-smoothing: antialiased;
 }
 

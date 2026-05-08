@@ -1,13 +1,13 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import AppRouter from "./AppRouter.tsx";
 import { CccProvider } from "./providers/CccProvider.tsx";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <CccProvider>
-      <App />
+      <AppRouter />
     </CccProvider>
   </StrictMode>,
 );

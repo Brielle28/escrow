@@ -4,6 +4,8 @@ export const marketJobsPageCopy = {
   heroSubtitle:
     "CKB-secured roles from serious clients. Filter by focus, scan budgets in CKB, and open a role to read the full brief before you apply.",
   searchPlaceholder: "Search titles, skills, or client…",
+  findWorkButton: "Find work",
+  categoriesLabel: "Categories",
   filterAll: "All",
   resultsLabel: (n: number) => (n === 1 ? "1 open role" : `${n} open roles`),
   emptyTitle: "No roles match that search",

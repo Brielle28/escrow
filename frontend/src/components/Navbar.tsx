@@ -2,7 +2,14 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EscrowLogo } from "./EscrowLogo";
 import { ConnectWallet } from "./wallet/ConnectWallet";
-import { dropdownLinkClass, dropdownPanelClass, navGroups, summaryClass, textLinkClass } from "../utils/Navbar";
+import {
+  dropdownLinkClass,
+  dropdownPanelClass,
+  findWorkNav,
+  navGroups,
+  summaryClass,
+  textLinkClass,
+} from "../utils/Navbar";
 
 function ChevronDown() {
   return (
@@ -26,6 +33,9 @@ export function Navbar() {
         </Link>
 
         <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex" aria-label="Primary">
+          <Link className={textLinkClass} to={findWorkNav.to}>
+            {findWorkNav.label}
+          </Link>
           {navGroups.map((group) => (
             <details key={group.label} className="relative">
               <summary className={summaryClass}>
@@ -71,6 +81,9 @@ export function Navbar() {
         id="navbar-drawer"
         className={`border-t border-gray-200 bg-gray-50 px-6 py-4 lg:hidden ${mobileOpen ? "block" : "hidden"}`}
       >
+        <Link className={`${textLinkClass} mb-1 block px-3 py-2.5`} to={findWorkNav.to}>
+          {findWorkNav.label}
+        </Link>
         {navGroups.map((group) => (
           <details key={group.label} className="relative mb-1">
             <summary className={`${summaryClass} w-full`}>

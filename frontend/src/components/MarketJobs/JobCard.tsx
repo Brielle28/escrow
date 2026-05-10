@@ -1,0 +1,72 @@
+import { ArrowUpRight, Briefcase, Clock3 } from "lucide-react";
+import { Link } from "react-router-dom";
+import type { MarketJob } from "../../utils/MarketJobs/types";
+import { formatBudgetRange, formatPostedRelative } from "../../utils/MarketJobs/marketJobsData";
+
+type JobCardProps = {
+  job: MarketJob;
+};
+
+export function JobCard({ job }: JobCardProps) {
+  return (
+    <article className="group relative flex h-full flex-col rounded-2xl border border-gray-200/90 bg-white p-5 shadow-[0_2px_24px_-12px_rgba(15,23,42,0.15)] ring-1 ring-black/3 transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-brand-500/25 hover:shadow-[0_18px_50px_-20px_rgba(85,179,107,0.35)] sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-brand-600">{job.category}</p>
+          <h2 className="mt-1.5 text-lg font-bold leading-snug tracking-tight text-gray-900 transition-colors group-hover:text-brand-600 sm:text-xl">
+            <Link to={`/jobs/${job.id}`} className="focus-visible:rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500">
+              <span className="absolute inset-0 rounded-2xl" aria-hidden />
+              {job.title}
+            </Link>
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">{job.summary}</p>
+        </div>
+        <span
+          className="relative z-10 inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-gray-500 transition-colors group-hover:border-brand-500/20 group-hover:bg-brand-50 group-hover:text-brand-600"
+          aria-hidden
+        >
+          <ArrowUpRight className="size-5" strokeWidth={1.75} />
+        </span>
+      </div>
+
+      <dl className="mt-5 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+        <div className="rounded-xl bg-gray-50/90 px-3 py-2 ring-1 ring-gray-100">
+          <dt className="text-[0.65rem] font-semibold uppercase tracking-wide text-gray-400">Budget</dt>
+          <dd className="mt-0.5 font-semibold tabular-nums text-gray-900">{formatBudgetRange(job.budgetMinCkb, job.budgetMaxCkb)}</dd>
+        </div>
+        <div className="rounded-xl bg-gray-50/90 px-3 py-2 ring-1 ring-gray-100">
+          <dt className="text-[0.65rem] font-semibold uppercase tracking-wide text-gray-400">Posted</dt>
+          <dd className="mt-0.5 font-medium text-gray-800">{formatPostedRelative(job.postedAtIso)}</dd>
+        </div>
+        <div className="col-span-2 flex items-center gap-2 rounded-xl bg-gray-50/90 px-3 py-2 ring-1 ring-gray-100 sm:col-span-1">
+          <Briefcase className="size-4 shrink-0 text-gray-400" strokeWidth={1.75} aria-hidden />
+          <div className="min-w-0">
+            <dt className="text-[0.65rem] font-semibold uppercase tracking-wide text-gray-400">Client</dt>
+            <dd className="truncate font-medium text-gray-800">{job.clientLabel}</dd>
+          </div>
+        </div>
+      </dl>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {job.skills.slice(0, 4).map((s) => (
+          <span key={s} className="rounded-lg bg-brand-50/80 px-2.5 py-1 text-xs font-medium text-brand-700 ring-1 ring-brand-500/15">
+            {s}
+          </span>
+        ))}
+        {job.skills.length > 4 ? (
+          <span className="rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">+{job.skills.length - 4}</span>
+        ) : null}
+      </div>
+
+      <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
+        <p className="flex items-center gap-1.5 text-xs text-gray-500">
+          <Clock3 className="size-3.5 shrink-0" strokeWidth={2} aria-hidden />
+          {job.durationLabel}
+        </p>
+        <p className="text-xs font-medium text-gray-500">
+          {job.proposalsCount} proposal{job.proposalsCount === 1 ? "" : "s"}
+        </p>
+      </div>
+    </article>
+  );
+}

@@ -3,6 +3,8 @@ import { LandingPage } from "./pages/LandingPage";
 import { ConnectWalletPage } from "./pages/ConnectWalletPage";
 import { DashboardClientPage } from "./pages/DashboardClientPage";
 import { DashboardFreelancerPage } from "./pages/DashboardFreelancerPage";
+import { JobDetailPage } from "./pages/JobDetailPage";
+import { MarketJobsPage } from "./pages/MarketJobsPage";
 
 const routing = createBrowserRouter([
   {
@@ -12,6 +14,14 @@ const routing = createBrowserRouter([
   {
     path: "/connects",
     element: <ConnectWalletPage />,
+  },
+  {
+    path: "/jobs",
+    element: <MarketJobsPage />,
+  },
+  {
+    path: "/jobs/:jobId",
+    element: <JobDetailPage />,
   },
   {
     path: "/dashboard/client",

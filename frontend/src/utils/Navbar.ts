@@ -1,12 +1,7 @@
+/** Top-level link (not a dropdown) — see Navbar */
+export const findWorkNav = { label: "Find Work", to: "/jobs" } as const;
+
 export const navGroups = [
-    {
-      label: "Find Work",
-      links: [
-        { to: "#", label: "Browse jobs" },
-        { to: "#", label: "Saved searches" },
-        { to: "#", label: "Proposals" },
-      ],
-    },
     {
       label: "Find Talent",
       links: [

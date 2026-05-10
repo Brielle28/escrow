@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "dev": "tsx src/server.ts",
     "integration:devnet": "tsx src/integration/runIntegration.ts",
     "integration:testnet": "node scripts/integration-testnet.mjs"
   },
@@ -14,10 +15,14 @@
     "@ckb-ccc/ccc": "^1.1.25",
     "@ckb-ccc/core": "^1.12.5",
     "@noble/secp256k1": "^1.7.1",
+    "cors": "^2.8.5",
     "dotenv": "^17.4.2",
+    "express": "^5.1.0",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
     "typescript": "~5.8.2"
   }
 }

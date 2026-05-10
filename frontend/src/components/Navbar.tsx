@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EscrowLogo } from "./EscrowLogo";
+import { ConnectWallet } from "./ConnectWallet";
 import { dropdownLinkClass, dropdownPanelClass, navGroups, summaryClass, textLinkClass } from "../utils/Navbar";
 
 function ChevronDown() {
@@ -46,15 +47,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-3">
-          <Link className="rounded-md px-2.5 py-2 text-[0.9375rem] font-medium text-gray-600 no-underline hover:text-gray-900" to="#">
-            Log In
-          </Link>
-          <Link
-            className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-2 text-[0.9375rem] font-semibold text-white no-underline transition-colors hover:bg-brand-600"
-            to="#"
-          >
-            Join Now
-          </Link>
+          <ConnectWallet />
           <button
             type="button"
             className="inline-flex rounded-md p-2 text-gray-900 lg:hidden"
@@ -97,15 +90,7 @@ export function Navbar() {
           Contact
         </Link>
         <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-3">
-          <Link className="rounded-md px-2.5 py-2 text-[0.9375rem] font-medium text-gray-600 no-underline hover:text-gray-900" to="#">
-            Log In
-          </Link>
-          <Link
-            className="inline-flex items-center justify-center rounded-lg bg-brand-500 px-5 py-2 text-[0.9375rem] font-semibold text-white no-underline hover:bg-brand-600"
-            to="#"
-          >
-            Join Now
-          </Link>
+          <ConnectWallet />
         </div>
       </div>
     </header>

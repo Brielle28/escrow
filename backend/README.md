@@ -2,6 +2,23 @@
 
 **TypeScript + `@ckb-ccc/ccc`** for integration tests, deploy helpers, and RPC — no React.
 
+## Wallet session API (client + freelancer)
+
+You can now run a lightweight auth server for wallet-backed sessions:
+
+```bash
+pnpm --filter escrow-backend dev
+```
+
+Base URL defaults to `http://localhost:8787` and provides:
+
+- `POST /api/auth/challenge` (address + role => nonce/message)
+- `POST /api/auth/verify` (address + role + nonce + signature => session token)
+- `GET /api/auth/session` (Bearer token => session details)
+- `DELETE /api/auth/session` (Bearer token => logout)
+
+`FRONTEND_ORIGIN` and `PORT` can be configured in `.env.local`.
+
 Default client and flows will align with your escrow deployment (`scripts.json`, cell deps) as you implement Week 3 in `Project_Documentation.md`.
 
 **Local OffCKB:** Copy `.env.example` → `.env.local`. Set `CKB_RPC_URL` to what `offckb node` prints (proxy often `http://127.0.0.1:28114`). From `offckb accounts`, pick an index and set `DEPLOYER_ADDRESS` / `DEPLOYER_PRIVATE_KEY` (devnet genesis keys — never mainnet). See `plan/offckb-local-setup.md`.

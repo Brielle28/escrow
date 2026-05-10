@@ -16,16 +16,17 @@ export function CccProvider({ children }: { children: ReactNode }) {
       ]}
       connectorProps={{
         style: {
-          "--background": "#0c1017",
-          "--divider": "rgba(255,255,255,0.08)",
-          "--btn-primary": "#1a2332",
-          "--btn-primary-hover": "#243044",
-          "--btn-secondary": "#1a2332",
-          "--btn-secondary-hover": "#243044",
-          "--icon-primary": "#f4f1ea",
-          "--icon-secondary": "rgba(244,241,234,0.55)",
-          color: "#f4f1ea",
-          "--tip-color": "#7a8494",
+          // White + green + charcoal theme to match the landing experience.
+          "--background": "#ffffff",
+          "--divider": "rgba(17,24,39,0.09)",
+          "--btn-primary": "#55b36b",
+          "--btn-primary-hover": "#479a5c",
+          "--btn-secondary": "#f8fafc",
+          "--btn-secondary-hover": "#f1f5f9",
+          "--icon-primary": "#111827",
+          "--icon-secondary": "rgba(17,24,39,0.62)",
+          color: "#111827",
+          "--tip-color": "#4b5563",
         } as CSSProperties,
       }}
       defaultClient={defaultClient}

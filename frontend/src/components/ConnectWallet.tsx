@@ -1,5 +1,7 @@
 import { ccc, useCcc, useSigner } from "@ckb-ccc/connector-react";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { loadWalletSession } from "../utils/auth/session";
 import { truncateAddress } from "../utils/truncateAddress";
 
 const pillBtn =
@@ -8,6 +10,10 @@ const pillBtn =
 const connectBtn =
   "inline-flex cursor-pointer items-center justify-center rounded-lg bg-gradient-to-b from-[#6bc77e] to-brand-500 px-[1.15rem] py-2 text-sm font-semibold text-white shadow-none hover:brightness-[1.03]";
 
+/**
+ * Compact wallet control for the navbar: opens full connect + role flow at `/connects`.
+ * Does not auto-sign; session is established only on the connect page after role selection.
+ */
 export function ConnectWallet() {
   const { open, wallet } = useCcc();
   const signer = useSigner();
@@ -16,8 +22,10 @@ export function ConnectWallet() {
 
   useEffect(() => {
     if (!signer) {
-      setAddress("");
-      setBalance("");
+      startTransition(() => {
+        setAddress("");
+        setBalance("");
+      });
       return;
     }
     let cancelled = false;
@@ -34,8 +42,19 @@ export function ConnectWallet() {
     };
   }, [signer]);
 
-  if (wallet) {
+  const session = loadWalletSession();
+  const sessionForWallet = session && address && session.address === address;
+
+  if (!wallet) {
     return (
+      <Link to="/connects" className={connectBtn}>
+        Connect wallet
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
       <button type="button" className={pillBtn} onClick={() => open()}>
         {wallet.icon ? (
           <img src={wallet.icon} alt="" className="size-8 shrink-0 rounded-full" width={32} height={32} />
@@ -47,12 +66,18 @@ export function ConnectWallet() {
           </span>
         </span>
       </button>
-    );
-  }
-
-  return (
-    <button type="button" className={connectBtn} onClick={() => open()}>
-      Connect wallet
-    </button>
+      {sessionForWallet ? (
+        <Link
+          to={session.role === "client" ? "/dashboard/client" : "/dashboard/freelancer"}
+          className="text-xs font-semibold text-brand-600 underline-offset-2 hover:underline"
+        >
+          Dashboard
+        </Link>
+      ) : (
+        <Link to="/connects" className="text-xs font-semibold text-amber-700 underline-offset-2 hover:underline">
+          Complete setup
+        </Link>
+      )}
+    </div>
   );
 }

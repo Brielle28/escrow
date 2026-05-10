@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { RequireWalletSession } from "../components/RequireWalletSession";
+import { RequireWalletSession } from "../components/wallet/RequireWalletSession";
 import { LandingLayout } from "../layouts/LandingLayout";
 import { loadWalletSession } from "../utils/auth/session";
 import { truncateAddress } from "../utils/truncateAddress";

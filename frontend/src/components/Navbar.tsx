@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EscrowLogo } from "./EscrowLogo";
-import { ConnectWallet } from "./ConnectWallet";
+import { ConnectWallet } from "./wallet/ConnectWallet";
 import { dropdownLinkClass, dropdownPanelClass, navGroups, summaryClass, textLinkClass } from "../utils/Navbar";
 
 function ChevronDown() {
@@ -16,7 +16,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white font-sans shadow-[0_1px_0_rgba(0,0,0,0.04)]">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-3.5">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-3.5 lg:gap-6">
         <Link
           to="/"
           className="inline-flex shrink-0 items-center text-[1.375rem] font-bold tracking-tight text-gray-900 no-underline"

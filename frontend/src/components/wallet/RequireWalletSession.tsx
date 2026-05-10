@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { loadWalletSession, type ActingRole } from "../utils/auth/session";
+import { loadWalletSession, type ActingRole } from "../../utils/auth/session";
 
 type RequireWalletSessionProps = {
   role: ActingRole;

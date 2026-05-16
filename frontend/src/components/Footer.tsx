@@ -37,8 +37,8 @@ const columns: { heading: string; links: { to: string; label: string }[] }[] = [
   {
     heading: "For Clients",
     links: [
-      { to: "#", label: "How to Hire" },
-      { to: "#", label: "Talent Marketplace" },
+      { to: "/how-to-hire", label: "How to Hire" },
+      { to: "/talent", label: "Talent Marketplace" },
       { to: "#", label: "Enterprise" },
       { to: "#", label: "Payroll Services" },
     ],
@@ -46,26 +46,27 @@ const columns: { heading: string; links: { to: string; label: string }[] }[] = [
   {
     heading: "For Freelancers",
     links: [
-      { to: "#", label: "How to Find Work" },
-      { to: "#", label: "Direct Contracts" },
-      { to: "#", label: "Freelancer Resources" },
+      { to: "/jobs", label: "How to Find Work" },
+      { to: "/direct-contracts", label: "Direct Contracts" },
+      { to: "/freelancer-resources", label: "Freelancer Resources" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { to: "#", label: "Help Center" },
-      { to: "#", label: "Trust & Safety" },
-      { to: "#", label: "Blog" },
+      { to: "/help", label: "Help Center" },
+      { to: "/trust-and-safety", label: "Trust & Safety" },
+      { to: "/blog", label: "Blog" },
+      { to: "/contact", label: "Contact" },
     ],
   },
   {
     heading: "Resources",
     links: [
-      { to: "#", label: "About Us" },
+      { to: "/about", label: "About Us" },
       { to: "#", label: "Careers" },
-      { to: "#", label: "Terms of Service" },
-      { to: "#", label: "Privacy Policy" },
+      { to: "/terms", label: "Terms of Service" },
+      { to: "/privacy", label: "Privacy Policy" },
     ],
   },
 ];

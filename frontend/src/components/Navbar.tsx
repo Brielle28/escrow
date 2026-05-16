@@ -2,22 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { EscrowLogo } from "./EscrowLogo";
 import { ConnectWallet } from "./wallet/ConnectWallet";
-import {
-  dropdownLinkClass,
-  dropdownPanelClass,
-  findWorkNav,
-  navGroups,
-  summaryClass,
-  textLinkClass,
-} from "../utils/Navbar";
-
-function ChevronDown() {
-  return (
-    <svg className="size-3 shrink-0 opacity-75" viewBox="0 0 12 12" aria-hidden>
-      <path fill="currentColor" d="M2.5 4.5 6 8l3.5-3.5z" />
-    </svg>
-  );
-}
+import { contactNav, findTalentNav, findWorkNav, textLinkClass } from "../utils/Navbar";
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -36,23 +21,11 @@ export function Navbar() {
           <Link className={textLinkClass} to={findWorkNav.to}>
             {findWorkNav.label}
           </Link>
-          {navGroups.map((group) => (
-            <details key={group.label} className="relative">
-              <summary className={summaryClass}>
-                {group.label}
-                <ChevronDown />
-              </summary>
-              <div className={dropdownPanelClass}>
-                {group.links.map((item) => (
-                  <Link key={item.label} className={dropdownLinkClass} to={item.to}>
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </details>
-          ))}
-          <Link className={textLinkClass} to="#">
-            Contact
+          <Link className={textLinkClass} to={findTalentNav.to}>
+            {findTalentNav.label}
+          </Link>
+          <Link className={textLinkClass} to={contactNav.to}>
+            {contactNav.label}
           </Link>
         </nav>
 
@@ -84,23 +57,11 @@ export function Navbar() {
         <Link className={`${textLinkClass} mb-1 block px-3 py-2.5`} to={findWorkNav.to}>
           {findWorkNav.label}
         </Link>
-        {navGroups.map((group) => (
-          <details key={group.label} className="relative mb-1">
-            <summary className={`${summaryClass} w-full`}>
-              {group.label}
-              <ChevronDown />
-            </summary>
-            <div className="mt-1.5 rounded-lg border border-gray-200 bg-white p-2 shadow-none">
-              {group.links.map((item) => (
-                <Link key={item.label} className={dropdownLinkClass} to={item.to}>
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </details>
-        ))}
-        <Link className={`${textLinkClass} block px-3 py-2.5`} to="#">
-          Contact
+        <Link className={`${textLinkClass} mb-1 block px-3 py-2.5`} to={findTalentNav.to}>
+          {findTalentNav.label}
+        </Link>
+        <Link className={`${textLinkClass} mb-1 block px-3 py-2.5`} to={contactNav.to}>
+          {contactNav.label}
         </Link>
         <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-200 pt-3">
           <ConnectWallet />

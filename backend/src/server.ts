@@ -2,6 +2,8 @@ import express, { type Request } from "express";
 import cors from "cors";
 import { consumeChallenge, createChallenge, createSession, deleteSession, getSession } from "./auth/store.js";
 import type { ActingRole } from "./auth/types.js";
+import { adminRoutes } from "./routes/adminRoutes.js";
+import { dashboardRoutes } from "./routes/dashboardRoutes.js";
 
 type ChallengeBody = {
   address?: unknown;
@@ -154,6 +156,9 @@ app.delete("/api/auth/session", (req, res) => {
   }
   res.status(204).send();
 });
+
+app.use(dashboardRoutes);
+app.use(adminRoutes);
 
 const port = Number(process.env.PORT ?? 8787);
 app.listen(port, () => {

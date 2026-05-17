@@ -1,0 +1,66 @@
+/* Donezo-inspired dashboard — Escrow brand greens */
+
+.dashboard-canvas {
+  background-color: #f8f9fa;
+}
+
+.dashboard-card {
+  border-radius: 1.25rem;
+  background-color: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.08);
+}
+
+.dashboard-card-featured {
+  border-radius: 1.25rem;
+  background: linear-gradient(145deg, #2f6d40 0%, #479a5c 45%, #55b36b 100%);
+  box-shadow: 0 12px 32px -8px rgba(47, 109, 64, 0.45);
+}
+
+.dashboard-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background-color: #2f6d40;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  box-shadow: 0 4px 14px -2px rgba(47, 109, 64, 0.35);
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-btn-primary:hover {
+  background-color: #3d854f;
+}
+
+.dashboard-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #ffffff;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  transition: background-color 0.15s ease;
+}
+
+.dashboard-btn-secondary:hover {
+  background-color: #f9fafb;
+}
+
+.dashboard-search {
+  border-radius: 9999px;
+  border: 1px solid #e5e7eb;
+  background-color: #f3f4f6;
+}
+
+.dashboard-search:focus-within {
+  border-color: #55b36b;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(85, 179, 107, 0.15);
+}

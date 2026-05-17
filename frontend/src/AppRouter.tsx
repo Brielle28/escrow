@@ -1,8 +1,11 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  adminDashboardRoutes,
+  clientDashboardRoute,
+  freelancerDashboardRoute,
+} from "./routes/dashboardRoutes";
 import { LandingPage } from "./pages/LandingPage";
 import { ConnectWalletPage } from "./pages/ConnectWalletPage";
-import { DashboardClientPage } from "./pages/DashboardClientPage";
-import { DashboardFreelancerPage } from "./pages/DashboardFreelancerPage";
 import { JobDetailPage } from "./pages/JobDetailPage";
 import { MarketJobsPage } from "./pages/MarketJobsPage";
 import { FindTalentPage } from "./pages/FindTalentPage";
@@ -19,86 +22,27 @@ import { TermsPage } from "./pages/TermsPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 
 const routing = createBrowserRouter([
-  {
-    path: "/",
-    element: <LandingPage />,
-  },
-  {
-    path: "/connects",
-    element: <ConnectWalletPage />,
-  },
-  {
-    path: "/contact",
-    element: <ContactPage />,
-  },
-  {
-    path: "/how-to-hire",
-    element: <HowToHirePage />,
-  },
-  {
-    path: "/direct-contracts",
-    element: <DirectContractsPage />,
-  },
-  {
-    path: "/freelancer-resources",
-    element: <FreelancerResourcesPage />,
-  },
-  {
-    path: "/help",
-    element: <HelpCenterPage />,
-  },
-  {
-    path: "/trust-and-safety",
-    element: <TrustSafetyPage />,
-  },
-  {
-    path: "/blog",
-    element: <BlogPage />,
-  },
-  {
-    path: "/about",
-    element: <AboutPage />,
-  },
-  {
-    path: "/terms",
-    element: <TermsPage />,
-  },
-  {
-    path: "/privacy",
-    element: <PrivacyPage />,
-  },
-  {
-    path: "/jobs",
-    element: <MarketJobsPage />,
-  },
-  {
-    path: "/talent",
-    element: <FindTalentPage />,
-  },
-  {
-    path: "/talent/:freelancerId",
-    element: <FreelancerDetailPage />,
-  },
-  {
-    path: "/jobs/:jobId",
-    element: <JobDetailPage />,
-  },
-  {
-    path: "/dashboard/client",
-    element: <DashboardClientPage />,
-  },
-  {
-    path: "/dashboard/freelancer",
-    element: <DashboardFreelancerPage />,
-  },
+  { path: "/", element: <LandingPage /> },
+  { path: "/connects", element: <ConnectWalletPage /> },
+  { path: "/contact", element: <ContactPage /> },
+  { path: "/how-to-hire", element: <HowToHirePage /> },
+  { path: "/direct-contracts", element: <DirectContractsPage /> },
+  { path: "/freelancer-resources", element: <FreelancerResourcesPage /> },
+  { path: "/help", element: <HelpCenterPage /> },
+  { path: "/trust-and-safety", element: <TrustSafetyPage /> },
+  { path: "/blog", element: <BlogPage /> },
+  { path: "/about", element: <AboutPage /> },
+  { path: "/terms", element: <TermsPage /> },
+  { path: "/privacy", element: <PrivacyPage /> },
+  { path: "/jobs", element: <MarketJobsPage /> },
+  { path: "/jobs/:jobId", element: <JobDetailPage /> },
+  { path: "/talent", element: <FindTalentPage /> },
+  { path: "/talent/:freelancerId", element: <FreelancerDetailPage /> },
+  clientDashboardRoute,
+  freelancerDashboardRoute,
+  ...adminDashboardRoutes,
 ]);
 
-const AppRouter = () => {
-  return (
-    <>
-      <RouterProvider router={routing} />
-    </>
-  );
-};
+const AppRouter = () => <RouterProvider router={routing} />;
 
 export default AppRouter;

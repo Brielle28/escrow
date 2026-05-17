@@ -5,6 +5,7 @@ import { ConnectWalletIntro } from "../components/wallet/ConnectFlow/ConnectWall
 import { RoleSelectionStep } from "../components/wallet/ConnectFlow/RoleSelectionStep";
 import { WalletConnectionStep } from "../components/wallet/ConnectFlow/WalletConnectionStep";
 import { AuthLayout } from "../layouts/AuthLayout";
+import { useSession } from "../providers/SessionProvider";
 import {
   clearWalletSession,
   establishWalletSession,
@@ -17,6 +18,7 @@ export function ConnectWalletPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const allowRoleSwitch = searchParams.get("switch") === "1";
+  const { refresh: refreshSession } = useSession();
 
   const { open, wallet } = useCcc();
   const signer = useSigner();
@@ -55,15 +57,32 @@ export function ConnectWalletPage() {
   }, [address, allowRoleSwitch, navigate]);
 
   useEffect(() => {
-    if (!address) {
-      setSelectedRole(null);
-      return;
-    }
+    if (!allowRoleSwitch) return;
+    let cancelled = false;
+    void (async () => {
+      const existing = loadWalletSession();
+      if (existing?.token) {
+        await clearWalletSession(existing.token);
+      }
+      refreshSession();
+      if (!cancelled) {
+        setSelectedRole(null);
+        setSubmitState("idle");
+        setErrorMessage("");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [allowRoleSwitch, refreshSession]);
+
+  useEffect(() => {
+    if (!address || allowRoleSwitch) return;
     const session = loadWalletSession();
     if (session?.address === address) {
       setSelectedRole(session.role);
     }
-  }, [address]);
+  }, [address, allowRoleSwitch]);
 
   async function handleContinue() {
     if (!signer || !address || !selectedRole) return;
@@ -82,7 +101,8 @@ export function ConnectWalletPage() {
         signMessage: (msg) => signMessageWithSigner(signer, msg),
       });
 
-      navigate(selectedRole === "client" ? "/dashboard/client" : "/dashboard/freelancer");
+      refreshSession();
+      navigate(selectedRole === "client" ? "/dashboard/client" : "/dashboard/freelancer", { replace: true });
     } catch (e) {
       setSubmitState("error");
       setErrorMessage(e instanceof Error ? e.message : "Could not finish sign-in.");
